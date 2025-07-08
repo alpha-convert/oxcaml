@@ -11,31 +11,22 @@ module Float_u = Stdlib_upstream_compatible.Float_u
 type t = float#
 |}]
 
-
-type t : bits64 = int64#
-[%%expect {|
-type t = int64#
-|}]
-
-
 let immediate_is_external () =
-  let _x @ external_ = 3 in
-  let _y @ external_ = 'a' in
+  let _x @ external_ = 'a' in
+  let _y @ external_ = 3 in
   ()
 [%%expect{|
 val immediate_is_external : unit -> unit = <fun>
 |}]
 
 let immediate_is_external64 () =
-  let _x @ external64 = 'a' in
-  let _y @ external64 = 3 in
+  let _x @ external64 = 3 in
+  let _y @ external64 = 'a' in
   let _z @ external64 = None in
   ()
 [%%expect{|
 val immediate_is_external64 : unit -> unit = <fun>
 |}]
-
-
 
 let none_is_external () =
   let _x @ external_ = None in
@@ -115,6 +106,7 @@ Error: This value is "internal" but expected to be "external64".
    the legacy mode is top, you are allowed to do this. Similarly you can write a
    nonportable thing into a portable record.  You're just prevented from
    creating a portable record with a mutable field not marked as @@ portable.
+   (see tests in [malloc.ml])
  *)
 
 type 'a t = {mutable f : 'a}
@@ -124,10 +116,6 @@ let foo (t : 'a t @ external_) (x : 'a @ internal) =
 type 'a t = { mutable f : 'a; }
 val foo : 'a t -> 'a -> unit = <fun>
 |}]
-
-(* CR jcutler: In the above type's case, creating an @external_ record of this type
-   should be disallowed. Because there is not currently a way to create external records
-(in this PR), we cannot test this. When malloc is introduced, add a test for this. *)
 
 let foo (t : 'a ref @ external_) (x : 'a @ internal) =
   t := x

@@ -1084,6 +1084,7 @@ let maybe_pmod_constraint mode expr =
 %token <string> HASHOP        "##" (* just an example *)
 %token SIG                    "sig"
 %token STACK                  "stack_"
+%token MALLOC                 "malloc_"
 %token STAR                   "*"
 %token <string * Location.t * string option>
        STRING                 "\"hello\"" (* just an example *)
@@ -2905,6 +2906,7 @@ fun_expr:
   | simple_expr nonempty_llist(labeled_simple_expr)
       { mkexp ~loc:$sloc (Pexp_apply($1, $2)) }
   | stack(simple_expr) %prec below_HASH { $1 }
+  | malloc(simple_expr) %prec below_HASH { $1 }
   | labeled_tuple %prec below_COMMA
       { mkexp ~loc:$sloc (Pexp_tuple $1) }
   | maybe_stack (
@@ -4582,6 +4584,9 @@ optional_atat_modalities_expr:
 %inline maybe_stack(expr):
   | expr { $1 }
   | stack(expr) { $1 }
+
+%inline malloc(expr):
+  | MALLOC expr { mkexp ~loc:$sloc (Pexp_malloc $2) }
 
 %inline param_type:
   | mktyp(
