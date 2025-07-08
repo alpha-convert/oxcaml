@@ -432,7 +432,7 @@ type expected_mode =
     (** The upper bound, hence r (right) *)
 
     (* CR-someday jcutler: This really should not be a part of the [expected_mode].
-    There are a bunch of places  where tying the current
+    There are a bunch of places where tying the current
     allocator to the expected mode is a potential source of confusion or even bugs. *)
 
     allocator : allocator;
@@ -513,7 +513,6 @@ let meet_regional mode =
   let mode = Value.disallow_left mode in
   Value.meet_with Areality Regionality.Const.Regional mode
 
-(* CR jcutler: optional bad *)
 let mode_default mode ~allocator =
   { position = RNontail;
     locality_context = None;
@@ -7152,7 +7151,11 @@ and type_expect_
           inner_ty
         in
       let inner_ty = unify_as_mallocd ty_expected in
-      let expected_mode = mode_coerce (Value.max_with_comonadic Externality Externality.external_) expected_mode in
+      let expected_mode =
+            mode_coerce
+              (Value.max_with_comonadic Externality Externality.external_)
+              expected_mode
+      in
       let exp = type_expect env {expected_mode with allocator = Allocator_malloc} e {ty = inner_ty; explanation} in
 
       let exp_desc = Texp_alloc (exp,Allocator_malloc) in
