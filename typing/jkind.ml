@@ -1516,6 +1516,7 @@ module Const = struct
 
     (* CR layouts v3: change to [Maybe_null] when
        [or_null array]s are implemented. *)
+    (* CR jcutler: ensure all the kind/kind_of_unboxed pairs have this pattern.*)
     let float64 =
       { jkind =
           mk_jkind (Base Float64) ~mode_crossing:false ~nullability:Non_null
@@ -2713,7 +2714,6 @@ let to_unsafe_mode_crossing jkind =
 let all_except_externality =
   Axis_set.singleton (Modal (Comonadic Externality)) |> Axis_set.complement
 
-(* CR jcutler: can we get rid of this? *)
 let get_externality_upper_bound ~jkind_of_type jk =
   let ( ({ layout = _; mod_bounds; with_bounds = No_with_bounds } :
           (_ * allowed) jkind_desc),
