@@ -12,16 +12,16 @@ type t = float#
 |}]
 
 let immediate_is_external () =
-  let _x @ external_ = 'a' in
-  let _y @ external_ = 3 in
+  let _x @ external_ = 3 in
+  let _y @ external_ = 'a' in
   ()
 [%%expect{|
 val immediate_is_external : unit -> unit = <fun>
 |}]
 
 let immediate_is_external64 () =
-  let _x @ external64 = 3 in
-  let _y @ external64 = 'a' in
+  let _x @ external64 = 'a' in
+  let _y @ external64 = 3 in
   let _z @ external64 = None in
   ()
 [%%expect{|
