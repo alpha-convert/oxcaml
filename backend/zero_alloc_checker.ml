@@ -2509,7 +2509,7 @@ end = struct
              because otherwise all loops would be considered allocating when
              poll insertion is enabled. [@poll error] should be used instead. *)
           next
-        | Alloc { mode = Local; _ } -> next
+        | Alloc { mode = Local | External ; _ } -> next (* CR jcutler: seems fine??? *)
         | Alloc { mode = Heap; bytes; dbginfo } ->
           let w = create_witnesses t (Alloc { bytes; dbginfo }) dbg in
           let effect =

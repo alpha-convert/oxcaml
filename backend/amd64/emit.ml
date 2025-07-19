@@ -1793,6 +1793,7 @@ let emit_instr ~first ~fallthrough i =
       let label = record_frame_label i.live (Dbg_alloc dbginfo) in
       D.define_label label;
       I.lea (mem64 NONE 8 R15) (res i 0))
+  | Lop (Alloc { bytes = n; dbginfo; mode = External }) -> failwith "IMPLEMENT ME!" (* CR jcutler: Do this.*)
   | Lop (Alloc { bytes = n; dbginfo = _; mode = Local }) ->
     let r = res i 0 in
     I.mov (domain_field Domainstate.Domain_local_sp) r;

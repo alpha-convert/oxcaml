@@ -514,6 +514,7 @@ let alloc_mode_for_allocations env (alloc : Alloc_mode.For_allocations.t) :
   | Local { region = r } ->
     let r = Env.find_region_exn env r in
     Local { region = r }
+  | External -> failwith "FIXME" (* CR jcutler: fixme *)
 
 let alloc_mode_for_applications env (alloc : Alloc_mode.For_applications.t) :
     Fexpr.alloc_mode_for_applications =

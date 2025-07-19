@@ -515,6 +515,7 @@ let alloc_mode_for_applications_to_cmx t =
 let alloc_mode_for_allocations_to_cmm t =
   match t with
   | Alloc_mode.For_allocations.Heap -> Cmm.Alloc_mode.Heap
+  | Alloc_mode.For_allocations.External -> Cmm.Alloc_mode.External
   | Alloc_mode.For_allocations.Local _ ->
     assert (Flambda_features.stack_allocation_enabled ());
     Cmm.Alloc_mode.Local

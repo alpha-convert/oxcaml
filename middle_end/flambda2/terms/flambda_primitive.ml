@@ -1030,6 +1030,7 @@ let result_kind_of_nullary_primitive p : result_kind =
 let coeffects_of_mode : Alloc_mode.For_allocations.t -> Coeffects.t = function
   | Local _ -> Coeffects.Has_coeffects
   | Heap -> Coeffects.No_coeffects
+  | External -> Coeffects.No_coeffects (* CR jcutler: maybe?? idk *)
 
 let effects_and_coeffects_of_nullary_primitive p : Effects_and_coeffects.t =
   match p with
@@ -1137,7 +1138,7 @@ let unary_primitive_eligible_for_cse p ~arg =
   | Array_length _ -> true
   | Bigarray_length _ -> false
   | String_length _ -> true
-  | Int_as_pointer m -> ( match m with Heap -> true | Local _ -> false)
+  | Int_as_pointer m -> ( match m with Heap -> true | Local _ -> false | External -> false) (* CR jcutler: seems reasonable? idk *)
   | Opaque_identity _ -> false
   | Int_arith _ -> true
   | Float_arith _ ->
@@ -1145,7 +1146,7 @@ let unary_primitive_eligible_for_cse p ~arg =
     Flambda_features.float_const_prop ()
   | Num_conv _ | Boolean_not | Reinterpret_64_bit_word _ -> true
   | Unbox_number _ | Untag_immediate -> false
-  | Box_number (_, Local _) ->
+  | Box_number (_, (Local _ | External)) -> (* CR jcutler: probalby fine here too. *)
     (* For the moment we don't CSE any local allocations. *)
     (* CR mshinwell: relax this in the future? *)
     false
@@ -1504,7 +1505,7 @@ let effects_and_coeffects_of_unary_primitive p : Effects_and_coeffects.t =
         (* Local allocations have coeffects, to avoid them being moved past a
            begin/end region. Hence, it is not safe to force the allocation to be
            moved, so we cannot use the `Delay` mode for those. *)
-        match alloc_mode with Heap -> Delay | Local _ -> Strict
+        match alloc_mode with Heap -> Delay | Local _ -> Strict | External -> Delay (* Presumably fine? *)
       else Strict
     in
     Only_generative_effects Immutable, coeffects_of_mode alloc_mode, placement
@@ -2129,6 +2130,7 @@ let variadic_primitive_eligible_for_cse p ~args =
   | Make_block (_, Mutable, _) | Make_array (_, Mutable, _) -> false
   | Make_block (_, Immutable_unique, _) | Make_array (_, Immutable_unique, _) ->
     false
+  | Make_block (_, _ , External) | Make_array (_, _, External) -> false (* CR jcutler: seems reasonable? *)
   | Make_block (_, Immutable, Heap) | Make_array (_, Immutable, Heap) ->
     (* See comment in [unary_primitive_eligible_for_cse], above, on [Box_number]
        case. *)
@@ -2209,6 +2211,7 @@ let effects_and_coeffects_of_variadic_primitive p =
       match alloc_mode with
       | Heap -> Coeffects.No_coeffects
       | Local _ -> Coeffects.Has_coeffects
+      | External -> Coeffects.No_coeffects (* CR jcutler: maybe? idk what coeffects are in this context. *)
     in
     Effects.Only_generative_effects mut, coeffects, Placement.Strict
 

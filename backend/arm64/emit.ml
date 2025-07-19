@@ -1054,7 +1054,7 @@ let num_call_gc_points instr =
     (* The following four should never be seen, since this function is run
        before branch relaxation. *)
     | Lop (Specific (Ifar_alloc _)) | Lop (Specific Ifar_poll) -> assert false
-    | Lop (Alloc { mode = Local | Heap; _ })
+    | Lop (Alloc { mode = Local | Heap | External ; _ }) (* CR jcutler: OK? *)
     | Lop
         (Specific
           ( Imuladd | Imulsub | Inegmulf | Imuladdf | Inegmuladdf | Imulsubf
@@ -1223,6 +1223,7 @@ module BR = Branch_relaxation.Make (struct
       and single = memory_access_size memory_chunk in
       based + barrier + single
     | Lop (Alloc { mode = Local; _ }) -> 9
+    | Lop (Alloc { mode = External; _ }) -> failwith "Unimplemented" (*CR jcutler: Count em, i guess...*)
     | Lop (Alloc { mode = Heap; _ }) when !fastcode_flag -> 5
     | Lop (Specific (Ifar_alloc _)) when !fastcode_flag -> 6
     | Lop Poll -> 3
@@ -1902,6 +1903,8 @@ let emit_instr i =
     assembly_code_for_allocation i ~n ~local:false ~far:true ~dbginfo
   | Lop (Alloc { bytes = n; dbginfo; mode = Local }) ->
     assembly_code_for_allocation i ~n ~local:true ~far:false ~dbginfo
+  | Lop (Alloc { bytes = _n; dbginfo = _; mode = External }) ->
+    failwith "Implement me." (* CR jcutler: no idea how to allocate on arm64. best left to the experts.  *)
   | Lop Begin_region ->
     let offset = Domainstate.(idx_of_field Domain_local_sp) * 8 in
     DSL.ins I.LDR

@@ -709,6 +709,7 @@ let let_dynamic_set_of_closures0 env res ~body ~bound_vars set
     ( Only_generative_effects Immutable,
       (match closure_alloc_mode with
       | Heap -> No_coeffects
+      | External -> No_coeffects (* CR jcutler: ?? *)
       | Local _ -> Has_coeffects),
       Strict )
   in

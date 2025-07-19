@@ -1203,7 +1203,7 @@ let classify_fields_of_block env fields alloc_mode =
   let is_local =
     match (alloc_mode : Alloc_mode.For_allocations.t) with
     | Local _ -> true
-    | Heap -> false
+    | Heap | External -> false
   in
   let static_fields =
     List.fold_left

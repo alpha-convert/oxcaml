@@ -272,26 +272,31 @@ let alloc_boxedfloat32_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedfloat32_header, dbg)
   | Local -> Cconst_natint (boxedfloat32_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_float_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (float_header, dbg)
   | Local -> Cconst_natint (float_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_boxedvec128_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedvec128_header, dbg)
   | Local -> Cconst_natint (boxedvec128_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_boxedvec256_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedvec256_header, dbg)
   | Local -> Cconst_natint (boxedvec256_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_boxedvec512_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedvec512_header, dbg)
   | Local -> Cconst_natint (boxedvec512_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_floatarray_header len dbg = Cconst_natint (floatarray_header len, dbg)
 
@@ -299,6 +304,7 @@ let alloc_closure_header ~(mode : Cmm.Alloc_mode.t) sz dbg =
   match mode with
   | Heap -> Cconst_natint (white_closure_header sz, dbg)
   | Local -> Cconst_natint (local_closure_header sz, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_infix_header ofs dbg = Cconst_natint (infix_header ofs, dbg)
 
@@ -306,16 +312,19 @@ let alloc_boxedint32_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedint32_header, dbg)
   | Local -> Cconst_natint (boxedint32_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_boxedint64_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedint64_header, dbg)
   | Local -> Cconst_natint (boxedint64_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 let alloc_boxedintnat_header (mode : Cmm.Alloc_mode.t) dbg =
   match mode with
   | Heap -> Cconst_natint (boxedintnat_header, dbg)
   | Local -> Cconst_natint (boxedintnat_local_header, dbg)
+  | External -> failwith "Unimplemented" (* CR jcutler: implement external boxed numbers. *)
 
 (* Integers *)
 
@@ -2134,6 +2143,7 @@ let make_alloc_generic ~block_kind ~mode ~alloc_block_kind dbg tag wordsize args
       match (mode : Cmm.Alloc_mode.t) with
       | Local -> local_block_header ~block_kind tag wordsize
       | Heap -> block_header ~block_kind tag wordsize
+      | External -> failwith "Implement me" (* CR jcutler: ?? *)
     in
     Cop (Calloc (mode, alloc_block_kind), Cconst_natint (hdr, dbg) :: args, dbg)
   else
@@ -4821,6 +4831,7 @@ let allocate_unboxed_int32_array ~elements (mode : Cmm.Alloc_mode.t) dbg =
     match mode with
     | Heap -> custom_header ~size
     | Local -> custom_local_header ~size
+    | External -> failwith "Unimplemented" (* CR jcutler: unimpl *)
   in
   let custom_ops =
     (* For odd-length unboxed int32 arrays there are 32 bits spare at the end of
@@ -4861,6 +4872,7 @@ let allocate_unboxed_float32_array ~elements (mode : Cmm.Alloc_mode.t) dbg =
     match mode with
     | Heap -> custom_header ~size
     | Local -> custom_local_header ~size
+    | External -> failwith "Unimplemented" (* CR jcutler: unimpl *)
   in
   let custom_ops =
     (* For odd-length unboxed float32 arrays there are 32 bits spare at the end
@@ -4881,6 +4893,7 @@ let allocate_unboxed_int64_or_nativeint_array custom_ops ~elements
     match mode with
     | Heap -> custom_header ~size
     | Local -> custom_local_header ~size
+    | External -> failwith "Unimplemented" (* CR jcutler: implement me *)
   in
   Cop
     ( Calloc (mode, Alloc_block_kind_int64_u_array),
@@ -4902,6 +4915,7 @@ let allocate_unboxed_vector_array ~ints_per_vec ~alloc_kind ~custom_ops
     match mode with
     | Heap -> custom_header ~size
     | Local -> custom_local_header ~size
+    | External -> failwith "Unimplemented" (* CR jcutler: implement me *)
   in
   Cop
     ( Calloc (mode, alloc_kind),

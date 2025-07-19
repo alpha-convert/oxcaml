@@ -78,7 +78,8 @@ let find_compatible_allocations :
         else { allocations = List.rev allocations; next_cell = Some cell }
       | Op (Begin_region | End_region) -> (
         match curr_mode with
-        | Local -> return ()
+        | Local -> return () (* CR jcutler: seems correct... *)
+        | External -> return ()
         | Heap -> loop allocations (DLL.next cell) ~curr_mode ~curr_size)
       | Op Poll -> return ()
       | Reloadretaddr | Poptrap _ | Prologue | Pushtrap _ | Stack_check _ ->

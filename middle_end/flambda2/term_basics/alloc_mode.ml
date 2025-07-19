@@ -140,20 +140,26 @@ module For_allocations = struct
   type t =
     | Heap
     | Local of { region : Variable.t }
+    | External
 
   let print ppf t =
     match t with
     | Heap -> Format.pp_print_string ppf "Heap"
     | Local { region } ->
       Format.fprintf ppf "@[<hov 1>(Local (region@ %a))@]" Variable.print region
+    | External -> Format.pp_print_string ppf "External"
 
   let compare t1 t2 =
     match t1, t2 with
     | Heap, Heap -> 0
     | Local { region = region1 }, Local { region = region2 } ->
       Variable.compare region1 region2
-    | Heap, Local _ -> -1
+    | External, External -> 0
+    | Heap, (Local _ | External)-> -1
     | Local _, Heap -> 1
+    | Local _, External -> -1
+    | External, Local _ -> 1
+    | External, Heap -> 1
 
   let heap = Heap
 
@@ -161,9 +167,12 @@ module For_allocations = struct
     if Flambda_features.stack_allocation_enabled ()
     then Local { region }
     else Heap
+  
+  let external_ = External
 
   let as_type t : For_types.t =
-    match t with Heap -> Heap | Local _ -> Heap_or_local
+    match t with Heap -> Heap | Local _ -> Heap_or_local | External -> failwith "TODO"
+    (* CR jcutler: TODO *)
 
   let from_lambda (mode : Lambda.locality_mode) ~current_region =
     if not (Flambda_features.stack_allocation_enabled ())
@@ -181,6 +190,7 @@ module For_allocations = struct
     | Heap -> Name_occurrences.empty
     | Local { region } ->
       Name_occurrences.singleton_variable region Name_mode.normal
+    | External -> Name_occurrences.empty
 
   let apply_renaming t renaming =
     match t with
@@ -188,11 +198,13 @@ module For_allocations = struct
     | Local { region } ->
       let region' = Renaming.apply_variable renaming region in
       if region == region' then t else Local { region = region' }
+    | External -> External
 
   let ids_for_export t =
     match t with
     | Heap -> Ids_for_export.empty
     | Local { region } -> Ids_for_export.singleton_variable region
+    | External -> Ids_for_export.empty
 end
 
 module For_assignments = struct

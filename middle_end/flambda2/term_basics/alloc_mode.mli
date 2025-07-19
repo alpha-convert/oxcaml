@@ -77,6 +77,7 @@ module For_allocations : sig
   type t = private
     | Heap  (** Normal allocation on the OCaml heap. *)
     | Local of { region : Variable.t }
+    | External
         (** Allocation on the local allocation stack in the given region. *)
 
   val print : Format.formatter -> t -> unit
@@ -87,6 +88,8 @@ module For_allocations : sig
 
   (** Returns [Heap] if stack allocation is disabled! *)
   val local : region:Variable.t -> t
+
+  val external_ : t
 
   val as_type : t -> For_types.t
 
