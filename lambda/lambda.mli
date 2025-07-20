@@ -40,6 +40,7 @@ type immediate_or_pointer =
 type locality_mode = private
   | Alloc_heap
   | Alloc_local
+  | Alloc_external
 
 type modify_mode = private
   | Modify_heap

@@ -1285,8 +1285,24 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
      translate it to a regular heap allocation. This will obviously need to be
      changed when we actually want malloc_ to malloc.
    *)
-  | Texp_alloc (e,_) -> transl_exp ~scopes sort e
+  | Texp_alloc (e,_) ->
+    let ll,shape = match e.exp_desc with
+                   | Texp_tuple (el,_) -> transl_value_list_with_shape ~scopes (List.map (fun (_, a) -> (a, Jkind.Sort.Const.for_tuple_element)) el)
+                   | _ -> failwith "Unimplemented"
+    in
+      Lprim(Pmakeblock(Obj.abstract_tag,Immutable,Some shape,Alloc_external),ll,(of_location ~scopes e.exp_loc))
 
+  (* | Texp_tuple (el, alloc_mode) ->
+      let ll, shape =
+        transl_value_list_with_shape ~scopes
+          (List.map (fun (_, a) -> (a, Jkind.Sort.Const.for_tuple_element)) el)
+      in
+        Lprim(Pmakeblock(0, Immutable, Some shape,
+                         transl_alloc_mode alloc_mode),
+              ll,
+              (of_location ~scopes e.exp_loc))
+      end
+ *)
 and pure_module m =
   match m.mod_desc with
     Tmod_ident _ -> Alias

@@ -3040,7 +3040,7 @@ let wrap_partial_application acc env apply_continuation (apply : IR.apply)
   in
   let contains_no_escaping_local_allocs =
     match (result_mode : Lambda.locality_mode) with
-    | Alloc_heap -> true
+    | Alloc_heap | Alloc_external -> true (* CR jcutler: maybe? *)
     | Alloc_local -> false
   in
   let my_region =

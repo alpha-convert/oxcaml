@@ -52,6 +52,7 @@ include (struct
   type locality_mode =
     | Alloc_heap
     | Alloc_local
+    | Alloc_external
 
   type modify_mode =
     | Modify_heap
@@ -69,15 +70,12 @@ include (struct
     if Config.stack_allocation then Modify_maybe_stack
     else Modify_heap
 
-  let join_locality_mode a b =
-    match a, b with
-    | Alloc_local, _ | _, Alloc_local -> Alloc_local
-    | Alloc_heap, Alloc_heap -> Alloc_heap
 end : sig
 
   type locality_mode = private
     | Alloc_heap
     | Alloc_local
+    | Alloc_external
 
   type modify_mode = private
     | Modify_heap
@@ -89,22 +87,23 @@ end : sig
   val modify_heap : modify_mode
 
   val modify_maybe_stack : modify_mode
-
-  val join_locality_mode : locality_mode -> locality_mode -> locality_mode
 end)
 
 let is_local_mode = function
   | Alloc_heap -> false
+  | Alloc_external -> false
   | Alloc_local -> true
 
 let is_heap_mode = function
   | Alloc_heap -> true
+  | Alloc_external -> true
   | Alloc_local -> false
 
 let sub_locality_mode a b =
   match a, b with
   | Alloc_heap, _ -> true
   | _, Alloc_local -> true
+  | _, Alloc_external-> true
   | Alloc_local, Alloc_heap -> false
 
 let eq_locality_mode a b =
