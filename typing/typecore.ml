@@ -134,6 +134,7 @@ type unsupported_stack_allocation =
   | Object
   | List_comprehension
   | Array_comprehension
+  | External_allocation
 
 let print_unsupported_stack_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
@@ -141,6 +142,7 @@ let print_unsupported_stack_allocation ppf = function
   | Object -> Format.fprintf ppf "objects"
   | List_comprehension -> Format.fprintf ppf "list comprehensions"
   | Array_comprehension -> Format.fprintf ppf "array comprehensions"
+  | External_allocation -> Format.fprintf ppf "externally allocated expressions"
 
 
 type unsupported_external_allocation =
@@ -772,7 +774,7 @@ let register_allocation ~loc ~env (expected_mode : expected_mode) =
     register_allocation_value_mode ~loc ~env expected_mode.mode expected_mode.allocator
   in
   let alloc_mode : alloc_mode =
-    { mode = alloc_mode;
+    Internal { mode = alloc_mode;
       locality_context = expected_mode.locality_context }
   in
   alloc_mode, mode_default mode ~allocator:Allocator_heap
@@ -4453,7 +4455,6 @@ let rec is_nonexpansive exp =
   (* Texp_hole can always be replaced by a field read from the old allocation,
      which is non-expansive: *)
   | Texp_hole _ -> true
-  | Texp_alloc (e,_) -> is_nonexpansive e
 
 and is_nonexpansive_prim (prim : Primitive.description) args =
   match prim.prim_name, args with
@@ -4898,7 +4899,7 @@ let check_partial_application ~statement exp =
             | Texp_lazy _ | Texp_object _ | Texp_pack _ | Texp_unreachable
             | Texp_extension_constructor _ | Texp_ifthenelse (_, _, None)
             | Texp_probe _ | Texp_probe_is_enabled _ | Texp_src_pos
-            | Texp_function _ | Texp_alloc _ ->
+            | Texp_function _ ->
                 check_statement ()
             | Texp_match (_, _, cases, _) ->
                 List.iter (fun {c_rhs; _} -> check c_rhs) cases
@@ -7086,6 +7087,9 @@ and type_expect_
       | Texp_record {alloc_mode = Some alloc_mode; _}
       | Texp_array (_, _, _, alloc_mode)
       | Texp_field (_, _, _, _, Boxing (alloc_mode, _), _) ->
+        (match alloc_mode with
+        | External -> unsupported External_allocation
+        | Internal alloc_mode ->
         begin
           submode ~loc ~env
             (Value.min_with_comonadic Areality Regionality.local)
@@ -7098,6 +7102,7 @@ and type_expect_
           | Error _ -> raise (Error (e.pexp_loc, env,
               Cannot_stack_allocate alloc_mode.locality_context))
         end
+        )
       | Texp_list_comprehension _ -> unsupported List_comprehension
       | Texp_array_comprehension _ -> unsupported Array_comprehension
       | Texp_new _ -> unsupported Object
@@ -7157,13 +7162,20 @@ and type_expect_
               expected_mode
       in
       let exp = type_expect env {expected_mode with allocator = Allocator_malloc} e {ty = inner_ty; explanation} in
-
-      let exp_desc = Texp_alloc (exp,Allocator_malloc) in
+      let exp_desc = match exp.exp_desc with
+      | Texp_record r -> Texp_record {r with alloc_mode = Some External}
+      | Texp_tuple(el,_) -> Texp_tuple(el,External)
+      | Texp_construct(loc,cstr,args,_) -> Texp_construct(loc,cstr,args,Some External)
+      | Texp_variant(l, Some (arg,_)) -> Texp_variant(l,Some(arg,External))
+      | _ -> Misc.fatal_error
+              "Parsetree for externally-allocable \
+               term elaborated to Typedtree corresponding to something else"
+      in
       re {
         exp_desc = exp_desc;
         exp_type = Predef.type_mallocd exp.exp_type;
         exp_loc = loc;
-        exp_extra = [];
+        exp_extra = ((Texp_alloc,loc,[]) :: exp.exp_extra);
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
@@ -8649,7 +8661,7 @@ and type_tuple ~overwrite ~loc ~env ~(expected_mode : expected_mode) ~ty_expecte
       expected_mode.allocator
   in
   let alloc_mode =
-    { mode = alloc_mode;
+    Internal { mode = alloc_mode;
       locality_context = expected_mode.locality_context }
   in
   (* CR layouts v5: non-values in tuples *)
@@ -10007,7 +10019,7 @@ and type_n_ary_function
         Zero_alloc.create_const zero_alloc
     in
     let alloc_mode =
-      { mode = Mode.Alloc.disallow_left fun_alloc_mode;
+      Internal { mode = Mode.Alloc.disallow_left fun_alloc_mode;
         locality_context = expected_mode.locality_context }
     in
     re

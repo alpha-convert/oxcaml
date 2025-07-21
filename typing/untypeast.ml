@@ -419,6 +419,7 @@ let exp_extra sub (extra, loc, attrs) sexp =
     | Texp_newtype (_, label_loc, jkind, _) ->
         Pexp_newtype (label_loc, jkind, sexp)
     | Texp_stack -> Pexp_stack sexp
+    | Texp_alloc -> Pexp_malloc sexp
     | Texp_mode modes ->
         Pexp_constraint (sexp, None, Typemode.untransl_mode_annots modes)
   in
@@ -521,6 +522,7 @@ let expression sub exp =
                 | Some (Texp_mode _) (* CR zqian: [Texp_mode] should be possible here *)
                 | Some (Texp_poly _ | Texp_newtype _)
                 | Some Texp_stack
+                | Some Texp_alloc
                 | None -> None
               in
               let constraint_ =

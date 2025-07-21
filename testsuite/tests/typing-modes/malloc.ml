@@ -371,3 +371,19 @@ let glorb2 () = malloc_ (Foo (1,2))
 type 'a t = Foo of 'a * 'a
 val glorb2 : unit -> int t mallocd = <fun>
 |}]
+
+let f (x @ external_) (y @ external_) = stack_ (malloc_ (x,y))
+[%%expect{|
+Line 1, characters 47-62:
+1 | let f (x @ external_) (y @ external_) = stack_ (malloc_ (x,y))
+                                                   ^^^^^^^^^^^^^^^
+Error: This expression is not an allocation site.
+|}]
+
+let f (x @ external_) (y @ external_) = malloc_ (stack_ (x,y))
+[%%expect{|
+Line 1, characters 48-62:
+1 | let f (x @ external_) (y @ external_) = malloc_ (stack_ (x,y))
+                                                    ^^^^^^^^^^^^^^
+Error: This expression is not an allocation site.
+|}]

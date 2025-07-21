@@ -463,6 +463,9 @@ let simplify_direct_partial_application ~simplify_expr dacc apply
       (match closure_alloc_mode_from_type with
       | Heap_or_local -> ()
       | Heap -> ()
+      | External ->
+        Misc.fatal_error
+          "New closure alloc mode cannot be External, this is not supported."
       | Local -> (
         match (new_closure_alloc_mode : Alloc_mode.For_applications.t) with
         | Local _ -> ()
@@ -551,7 +554,9 @@ let simplify_direct_partial_application ~simplify_expr dacc apply
           | Some applied_callee -> applied_callee :: applied_unarized_args
         in
         let contains_no_escaping_local_allocs =
-          match result_mode with Alloc_heap -> true | Alloc_local -> false
+          match result_mode with
+          | Alloc_heap | Alloc_external -> true
+          | Alloc_local -> false
         in
         let my_closure = Variable.create "my_closure" in
         let my_region =
