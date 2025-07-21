@@ -16,6 +16,8 @@ module For_types = struct
   type t =
     | Heap
     | Local
+    | External
+    (* CR jcutler: this should probably be called "unknown"... *)
     | Heap_or_local
   [@@warning "-37"]
 
@@ -23,19 +25,35 @@ module For_types = struct
     match t with
     | Heap -> Format.pp_print_string ppf "Heap"
     | Local -> Format.pp_print_string ppf "Local"
+    | External -> Format.pp_print_string ppf "External"
     | Heap_or_local -> Format.pp_print_string ppf "Heap_or_local"
 
+  (* CR jcutler: fix this comment if you change heap_or_local *)
+  (* In types/meet_and_join.ml, we define
+
+     Heap < Local, and Local < Heap_or_local, and External < Heap_or_local.
+
+     This comparison does not need to be compaitible. We choose Heap < Local <
+     External < Heap_or_local as the total ordering here. *)
   let compare t1 t2 =
     match t1, t2 with
-    | Heap, Heap | Local, Local | Heap_or_local, Heap_or_local -> 0
-    | Heap, (Local | Heap_or_local) -> -1
+    | Heap, Heap
+    | Local, Local
+    | Heap_or_local, Heap_or_local
+    | External, External ->
+      0
+    | Heap, (Local | External | Heap_or_local) -> -1
     | (Local | Heap_or_local), Heap -> 1
-    | Local, Heap_or_local -> -1
-    | Heap_or_local, Local -> 1
+    | Local, (Heap_or_local | External) -> -1
+    | Heap_or_local, (Local | External) -> 1
+    | External, (Heap | Local) -> 1
+    | External, Heap_or_local -> -1
 
   let equal t1 t2 = compare t1 t2 = 0
 
   let heap = Heap
+
+  let external_ = External
 
   let local () =
     if not (Flambda_features.stack_allocation_enabled ())
@@ -47,10 +65,14 @@ module For_types = struct
     then Heap
     else Heap_or_local
 
-  let from_lambda (mode : Lambda.locality_mode) =
+  let from_lambda (mode : Lambda.allocation_mode) =
     if not (Flambda_features.stack_allocation_enabled ())
     then Heap
-    else match mode with Alloc_heap -> Heap | Alloc_local -> Heap_or_local
+    else
+      match mode with
+      | Alloc_heap -> Heap
+      | Alloc_local -> Heap_or_local
+      | Alloc_external -> External
 
   let to_lambda t =
     match t with
@@ -58,6 +80,7 @@ module For_types = struct
     | Local | Heap_or_local ->
       assert (Flambda_features.stack_allocation_enabled ());
       Lambda.alloc_local
+    | External -> Lambda.alloc_external
 end
 
 module For_applications = struct
@@ -95,13 +118,17 @@ module For_applications = struct
   let as_type t : For_types.t =
     match t with Heap -> Heap | Local _ -> Heap_or_local
 
-  let from_lambda (mode : Lambda.locality_mode) ~current_region
+  let from_lambda (mode : Lambda.allocation_mode) ~current_region
       ~current_ghost_region =
     if not (Flambda_features.stack_allocation_enabled ())
     then Heap
     else
       match mode with
       | Alloc_heap -> Heap
+      | Alloc_external ->
+        failwith "Unimplemented"
+        (* CR jcutler: what is an application mode? Will we ever get
+           alloc_external on one?*)
       | Alloc_local -> (
         match current_region, current_ghost_region with
         | Some current_region, Some current_ghost_region ->
@@ -140,22 +167,29 @@ module For_allocations = struct
   type t =
     | Heap
     | Local of { region : Variable.t }
+    | External
 
   let print ppf t =
     match t with
     | Heap -> Format.pp_print_string ppf "Heap"
     | Local { region } ->
       Format.fprintf ppf "@[<hov 1>(Local (region@ %a))@]" Variable.print region
+    | External -> Format.pp_print_string ppf "External"
 
   let compare t1 t2 =
     match t1, t2 with
     | Heap, Heap -> 0
     | Local { region = region1 }, Local { region = region2 } ->
       Variable.compare region1 region2
-    | Heap, Local _ -> -1
+    | External, External -> 0
+    | Heap, (Local _ | External) -> -1
     | Local _, Heap -> 1
+    | Local _, External -> -1
+    | External, (Local _ | Heap) -> 1
 
   let heap = Heap
+
+  let external_ = External
 
   let local ~region =
     if Flambda_features.stack_allocation_enabled ()
@@ -163,9 +197,12 @@ module For_allocations = struct
     else Heap
 
   let as_type t : For_types.t =
-    match t with Heap -> Heap | Local _ -> Heap_or_local
+    match t with
+    | Heap -> Heap
+    | Local _ -> Heap_or_local
+    | External -> External
 
-  let from_lambda (mode : Lambda.locality_mode) ~current_region =
+  let from_lambda (mode : Lambda.allocation_mode) ~current_region =
     if not (Flambda_features.stack_allocation_enabled ())
     then Heap
     else
@@ -175,12 +212,14 @@ module For_allocations = struct
         match current_region with
         | Some region -> Local { region }
         | None -> Misc.fatal_error "Local allocation without a region")
+      | Alloc_external -> External
 
   let free_names t =
     match t with
     | Heap -> Name_occurrences.empty
     | Local { region } ->
       Name_occurrences.singleton_variable region Name_mode.normal
+    | External -> Name_occurrences.empty
 
   let apply_renaming t renaming =
     match t with
@@ -188,11 +227,13 @@ module For_allocations = struct
     | Local { region } ->
       let region' = Renaming.apply_variable renaming region in
       if region == region' then t else Local { region = region' }
+    | External -> External
 
   let ids_for_export t =
     match t with
     | Heap -> Ids_for_export.empty
     | Local { region } -> Ids_for_export.singleton_variable region
+    | External -> Ids_for_export.empty
 end
 
 module For_assignments = struct

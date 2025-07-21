@@ -431,15 +431,18 @@ let meet_alloc_mode env (alloc_mode1 : Alloc_mode.For_types.t)
     (alloc_mode2 : Alloc_mode.For_types.t) : Alloc_mode.For_types.t meet_result
     =
   match alloc_mode1, alloc_mode2 with
-  | (Heap_or_local | Local), (Heap_or_local | Local) | Heap, Heap ->
+  | (Heap_or_local | Local), (Heap_or_local | Local)
+  | (Heap_or_local | External), (Heap_or_local | External)
+  | Heap, Heap ->
     Ok (Both_inputs, env)
-  | (Heap_or_local | Local), _ -> Ok (Right_input, env)
-  | _, (Heap_or_local | Local) -> Ok (Left_input, env)
+  | (Heap_or_local | Local | External), _ -> Ok (Right_input, env)
+  | _, (Heap_or_local | Local | External) -> Ok (Left_input, env)
 
 let join_alloc_mode (alloc_mode1 : Alloc_mode.For_types.t)
     (alloc_mode2 : Alloc_mode.For_types.t) : Alloc_mode.For_types.t =
   match alloc_mode1, alloc_mode2 with
-  | (Heap_or_local | Local), _ | _, (Heap_or_local | Local) ->
+  | (Heap_or_local | Local | External), _ | _, (Heap_or_local | Local | External)
+    ->
     Alloc_mode.For_types.unknown ()
   | Heap, Heap -> Alloc_mode.For_types.heap
 
