@@ -67,6 +67,12 @@ CAMLexport value caml_alloc (mlsize_t wosize, tag_t tag) {
   return caml_alloc_with_reserved (wosize, tag, 0);
 }
 
+CAMLexport void* caml_alloc_malloc(mlsize_t wosize, tag_t tag) {
+  char* res = (char*) malloc(1 + wosize);
+  res[0] = tag;
+  return (res + 1);
+}
+
 /* This is used by the native compiler for large block allocations.
    The resulting block can be filled with [caml_modify], or [caml_initialize],
    or direct writes for integer values and code pointers.
