@@ -7156,6 +7156,7 @@ and type_expect_
           inner_ty
         in
       let inner_ty = unify_as_mallocd ty_expected in
+      (* Ensure the contents are at most external *)
       let expected_mode =
             mode_coerce
               (Value.max_with_comonadic Externality Externality.external_)
@@ -7187,15 +7188,38 @@ and type_expect_
                             position = 1; arity = 1}))
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
+      let expected_mode =
+            mode_coerce
+              (Value.of_const ({Value.Const.max with uniqueness = Unique}))
+              expected_mode
+      in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
-      (* CR jcutler: maybe instead check if mallocd_ty is principal *)
-      if not (Ctype.is_principal inner_ty) then (
-        (* CR jcutler: write a message.*)
+      let warn_not_principal () =
+        (* CR jcutler: write the message*)
         let msg = "" in
-        Location.prerr_warning loc (Warnings.Not_principal msg));
-
-      assert (mallocd_ty = exp.exp_type);
-      exp
+        Location.prerr_warning loc (Warnings.Not_principal msg)
+      in
+      (* CR jcutler: maybe instead check if mallocd_ty is principal *)
+      if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
+      let exp_type =
+        (match get_desc inner_ty with
+         | Ttuple(args) -> Tunboxed_tuple(args)
+         (*| Tconstr(ctr,tys,abbrev_memo) ->
+            _*)
+         | _ -> Misc.fatal_error "Unimplemented")
+        |> newty
+      in
+      unify_exp_types loc env exp_type ty_expected;
+      (* CR jcutler: fix the output expr *)
+      let exp_desc = exp.exp_desc in
+      re {
+        exp_desc = exp_desc;
+        exp_type = exp_type;
+        exp_loc = loc;
+        exp_extra = [];
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env
+      }
   | Pexp_comprehension comp ->
       Language_extension.assert_enabled ~loc Comprehensions ();
       type_comprehension_expr
