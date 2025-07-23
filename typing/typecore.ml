@@ -153,6 +153,11 @@ type unsupported_external_allocation =
   | Function
   | Array
 
+type unsupported_free =
+  | Unknown_shape
+  | Not_an_allocation
+  | Existentials
+
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
   | Module -> Format.fprintf ppf "modules"
@@ -312,6 +317,7 @@ type error =
       { some_args_ok : bool; ty_fun : type_expr; jkind : jkind_lr }
   | Overwrite_of_invalid_term
   | Unexpected_hole
+  | Unsupported_free of unsupported_free
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -7193,6 +7199,17 @@ and type_expect_
               (Value.of_const ({Value.Const.max with uniqueness = Unique}))
               expected_mode
       in
+      let unsupported reason =
+        raise (Error (e.pexp_loc, env, Unsupported_free reason))
+      in
+      let get_component_types env path args =
+          let decl = Env.find_type path env in
+          let apply_args inner_ty =
+            if List.length args = 0 then inner_ty
+            else apply env decl.type_params inner_ty args
+          in
+            (decl, apply_args)
+        in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
       let warn_not_principal () =
         (* CR jcutler: write the message*)
@@ -7204,8 +7221,22 @@ and type_expect_
       let exp_type =
         (match get_desc inner_ty with
          | Ttuple(args) -> Tunboxed_tuple(args)
-         (*| Tconstr(ctr,tys,abbrev_memo) ->
-            _*)
+         | Tconstr(p,args,_) ->
+            let (decl,apply_args) = get_component_types env p args in
+            let components = (match decl.type_kind with
+              | Type_record (fields, _, _) ->
+                  List.map (fun field -> (Some (Ident.name (field.Types.ld_id)), apply_args field.Types.ld_type)) fields
+              | Type_variant ([ctr], _, _) ->
+                begin match ctr.cd_args with
+                | Cstr_tuple arg_types ->
+                    List.map (fun ca -> (None, apply_args ca.Types.ca_type)) arg_types
+                | Cstr_record fields ->
+                    List.map (fun field -> (Some (Ident.name (field.Types.ld_id)), apply_args field.Types.ld_type)) fields
+                end
+              | Type_variant (_, _, _) | Type_abstract _ | Type_open -> unsupported Unknown_shape
+              | Type_record_unboxed_product _ -> unsupported Not_an_allocation)
+              in
+              Tunboxed_tuple components
          | _ -> Misc.fatal_error "Unimplemented")
         |> newty
       in
@@ -11572,6 +11603,10 @@ let report_error ~loc env =
   | Unexpected_hole ->
       Location.errorf ~loc
         "wildcard \"_\" not expected."
+        (* CR jcutler: message here. *)
+  | Unsupported_free _reason ->
+      Location.errorf ~loc
+        "This cannot be freed with free_, try free_stack_"
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env_error env

@@ -8,12 +8,6 @@ let f (x @ external_) (y @ external_) =
 val f : 'a @ unique -> 'b @ unique -> #('a * 'b) = <fun>
 |}]
 
-let f (x @ external_ aliased) =
-  free_ (malloc_ (x,x))
-[%%expect{||}]
-
-
-
 let f (x : (int * int) mallocd) =
   free_ x
 [%%expect {|
@@ -51,3 +45,36 @@ Line 2, characters 8-9:
             ^
 Error: This value is "aliased" but expected to be "unique".
 |}]
+
+type t = {x : int; y : int}
+let f (t : t mallocd) = free_ t
+[%%expect {|
+type t = { x : int; y : int; }
+val f : t mallocd @ unique -> #(x:int * y:int) = <fun>
+|}]
+
+type t = {x : int; y : int}
+let f (t : t mallocd) = free_ t
+[%%expect {|
+type t = { x : int; y : int; }
+val f : t mallocd @ unique -> #(x:int * y:int) = <fun>
+|}]
+
+type t = {mutable x : string; y : int}
+let f (t : t mallocd) = free_ t
+[%%expect {|
+|}]
+
+type t = Foo of {z : char ; x : string; y : int}
+let f (t : t mallocd) = free_ t
+[%%expect {||}]
+
+
+type t = Foo of {mutable x : string; y : int}
+let f (t : t mallocd) = free_ t
+[%%expect {||}]
+
+(*CR jcutler: ensure this works with module business.
+module M : sig type t = ... free M.t
+
+*)
