@@ -7179,7 +7179,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-
+  | Pexp_free _ -> Misc.fatal_error "Unimplemented"
   | Pexp_comprehension comp ->
       Language_extension.assert_enabled ~loc Comprehensions ();
       type_comprehension_expr
