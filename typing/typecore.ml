@@ -7179,7 +7179,23 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_free _ -> Misc.fatal_error "Unimplemented"
+  | Pexp_free e ->
+      let inner_ty =
+        newvar (Jkind.Builtin.value_or_null
+                    ~why:(Type_argument
+                          { parent_path = Predef.path_mallocd ;
+                            position = 1; arity = 1}))
+      in
+      let mallocd_ty = Predef.type_mallocd inner_ty in
+      let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
+      (* CR jcutler: maybe instead check if mallocd_ty is principal *)
+      if not (Ctype.is_principal inner_ty) then (
+        (* CR jcutler: write a message.*)
+        let msg = "" in
+        Location.prerr_warning loc (Warnings.Not_principal msg));
+
+      assert (mallocd_ty = exp.exp_type);
+      exp
   | Pexp_comprehension comp ->
       Language_extension.assert_enabled ~loc Comprehensions ();
       type_comprehension_expr
