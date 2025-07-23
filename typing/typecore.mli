@@ -218,7 +218,8 @@ type unsupported_external_allocation =
 
 type unsupported_free =
   | Unknown_shape
-  | Existentials
+  | Not_an_allocation
+  | Gadt
 
 
 type error =

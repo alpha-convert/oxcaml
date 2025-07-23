@@ -67,14 +67,28 @@ let f (t : t mallocd) = free_ t
 
 type t = Foo of {z : char ; x : string; y : int}
 let f (t : t mallocd) = free_ t
-[%%expect {||}]
+[%%expect {|
+type t = Foo of { z : char; x : string; y : int; }
+val f : t mallocd @ unique -> #(z:char * x:string * y:int) = <fun>
+|}]
 
 
 type t = Foo of {mutable x : string; y : int}
 let f (t : t mallocd) = free_ t
-[%%expect {||}]
+[%%expect {|
+|}]
 
 (*CR jcutler: ensure this works with module business.
 module M : sig type t = ... free M.t
 
 *)
+
+type t = Pack : 'a. 'a -> t
+let f (t : t mallocd) = free_ t
+[%%expect{|
+type t = Pack : 'a -> t
+Line 2, characters 30-31:
+2 | let f (t : t mallocd) = free_ t
+                                  ^
+Error: Freeing GADTs is not supported
+|}]

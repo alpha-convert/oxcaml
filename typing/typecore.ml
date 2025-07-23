@@ -156,7 +156,7 @@ type unsupported_external_allocation =
 type unsupported_free =
   | Unknown_shape
   | Not_an_allocation
-  | Existentials
+  | Gadt
 
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
@@ -7219,6 +7219,7 @@ and type_expect_
       (* CR jcutler: maybe instead check if mallocd_ty is principal *)
       if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
       let exp_type =
+        (* CR jcutler: ensure you drop all of the mutable fields. *)
         (match get_desc inner_ty with
          | Ttuple(args) -> Tunboxed_tuple(args)
          | Tconstr(p,args,_) ->
@@ -7227,6 +7228,7 @@ and type_expect_
               | Type_record (fields, _, _) ->
                   List.map (fun field -> (Some (Ident.name (field.Types.ld_id)), apply_args field.Types.ld_type)) fields
               | Type_variant ([ctr], _, _) ->
+                if ctr.cd_res <> None then unsupported Gadt;
                 begin match ctr.cd_args with
                 | Cstr_tuple arg_types ->
                     List.map (fun ca -> (None, apply_args ca.Types.ca_type)) arg_types
@@ -11604,9 +11606,18 @@ let report_error ~loc env =
       Location.errorf ~loc
         "wildcard \"_\" not expected."
         (* CR jcutler: message here. *)
-  | Unsupported_free _reason ->
-      Location.errorf ~loc
-        "This cannot be freed with free_, try free_stack_"
+  | Unsupported_free reason ->
+        match reason with
+        | Unknown_shape ->
+            Location.errorf ~loc
+              "Type does not have a single shape, try free_stack_"
+        | Not_an_allocation ->
+            Location.errorf ~loc
+              "Type does not require an allocation"
+        | Gadt ->
+            Location.errorf ~loc
+              "Freeing GADTs is not supported"
+
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env_error env
