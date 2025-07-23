@@ -728,6 +728,8 @@ let expression sub exp =
     | Texp_overwrite (exp1, exp2) ->
         Pexp_overwrite(sub.expr sub exp1, sub.expr sub exp2)
     | Texp_hole _ -> Pexp_hole
+    | Texp_free (exp,Tfree_to_stack) -> Pexp_free(sub.expr sub exp, Pfree_to_stack)
+    | Texp_free (exp,Tfree_to_unbox) -> Pexp_free(sub.expr sub exp, Pfree_to_unbox)
   in
   List.fold_right (exp_extra sub) exp.exp_extra
     (Exp.mk ~loc ~attrs desc)

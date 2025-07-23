@@ -152,6 +152,11 @@ type unsupported_external_allocation =
   | Function
   | Array
 
+type unsupported_free =
+  | No_unboxed_version of type_expr
+  | Decl_not_found of Path.t
+  | Unfreeable of type_expr
+
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
   | Module -> Format.fprintf ppf "modules"
@@ -311,6 +316,7 @@ type error =
       { some_args_ok : bool; ty_fun : type_expr; jkind : jkind_lr }
   | Overwrite_of_invalid_term
   | Unexpected_hole
+  | Unsupported_free of unsupported_free
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -4447,6 +4453,7 @@ let rec is_nonexpansive exp =
   (* Texp_hole can always be replaced by a field read from the old allocation,
      which is non-expansive: *)
   | Texp_hole _ -> true
+  | Texp_free (e,_) -> is_nonexpansive e
 
 and is_nonexpansive_prim (prim : Primitive.description) args =
   match prim.prim_name, args with
@@ -4902,7 +4909,7 @@ let check_partial_application ~statement exp =
             | Texp_let (_, _, e) | Texp_letmutable(_, e)
             | Texp_sequence (_, _, e) | Texp_open (_, e)
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
-            | Texp_exclave e ->
+            | Texp_exclave e | Texp_free (e,_) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -7214,7 +7221,84 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-
+  | Pexp_free (e,free_to) ->
+      let unsupported reason =
+        raise (Error (e.pexp_loc, env, Unsupported_free reason))
+      in
+      let get_expanded_desc env ty = get_desc (Ctype.expand_head env ty) in
+      let inner_ty =
+        newvar (Jkind.Builtin.value_or_null
+                    ~why:(Type_argument
+                          { parent_path = Predef.path_mallocd ;
+                            position = 1; arity = 1}))
+      in
+      let get_unboxed_version p env =
+          let decl =
+            try Env.find_type p env
+            with Not_found -> unsupported (Decl_not_found p)
+          in
+          match decl.type_unboxed_version with
+          | None -> unsupported (No_unboxed_version inner_ty)
+          | _ -> Path.unboxed_version p
+      in
+      let mallocd_ty = Predef.type_mallocd inner_ty in
+      let expected_mode =
+            mode_coerce
+              (Value.of_const {Value.Const.max with uniqueness = Unique})
+              expected_mode
+      in
+      let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
+      let exp_type =
+        match free_to with
+        | Pfree_to_unbox ->
+          (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
+          begin match get_expanded_desc env inner_ty with
+          | Ttuple args -> newty (Tunboxed_tuple(args))
+          | Tconstr(p,args,m) ->
+              let p = get_unboxed_version p env in
+              newty (Tconstr(p,args,m))
+          | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
+          | _ -> unsupported (Unfreeable inner_ty)
+          end
+        | Pfree_to_stack ->
+            (match get_expanded_desc env inner_ty with
+             | Tconstr(p,_,_) ->
+                  let decl = Env.find_type p env in
+                  begin match decl.type_kind with
+                  | Type_abstract _  -> unsupported (Unfreeable inner_ty)
+                  | Type_open | Type_record_unboxed_product _ -> unsupported (Unfreeable inner_ty)
+                  | Type_record _| Type_variant _ -> ()
+                  end
+             | Ttuple _ | Tvariant _ -> ()
+             | _ -> unsupported (Unfreeable inner_ty));
+            submode ~loc ~env
+              (Value.min_with_comonadic Areality Regionality.local)
+              expected_mode;
+            inner_ty
+      in
+      if not (is_principal inner_ty) && !Clflags.principal then begin
+        let msg =
+          Format.asprintf
+            "typing this term eagerly matches on \
+             the type %a, which"
+            Printtyp.type_expr inner_ty
+        in
+        Location.prerr_warning loc (Warnings.Not_principal msg)
+      end;
+      unify_exp_types loc env exp_type ty_expected;
+      let free_to = match free_to with
+                    | Pfree_to_stack -> Tfree_to_stack
+                    | Pfree_to_unbox -> Tfree_to_unbox
+      in
+      let exp_desc = Texp_free(exp,free_to) in
+      re {
+        exp_desc = exp_desc;
+        exp_type = exp_type;
+        exp_loc = loc;
+        exp_extra = [];
+        exp_attributes = sexp.pexp_attributes;
+        exp_env = env
+      }
   | Pexp_comprehension comp ->
       Language_extension.assert_enabled ~loc Comprehensions ();
       type_comprehension_expr
@@ -11579,6 +11663,25 @@ let report_error ~loc env =
   | Unexpected_hole ->
       Location.errorf ~loc
         "wildcard \"_\" not expected."
+        (* CR jcutler: message here. *)
+  | Unsupported_free reason ->
+        match reason with
+        (* CR jcutler: actually print the type! *)
+        | No_unboxed_version typ ->
+            Location.errorf ~loc
+              "Type %a does not have an unboxed version, try free_stack_"
+              (Style.as_inline_code Printtyp.type_expr) typ
+        | Decl_not_found p ->
+            Location.errorf ~loc
+              "Type %a does not have a definition in scope, cannot free it."
+              Path.print p
+        | Unfreeable typ ->
+            Location.errorf ~loc
+              "Cannot free values of type %a"
+              (Style.as_inline_code Printtyp.type_expr) typ
+
+
+
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env_error env
