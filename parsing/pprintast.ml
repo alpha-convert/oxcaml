@@ -1128,6 +1128,10 @@ and expression ctxt f x =
           (expression2 reset_ctxt) e1
           (expression2 reset_ctxt) e2
     | Pexp_hole -> pp f "_"
+    | Pexp_free (e,Pfree_to_unbox) ->
+        pp f "@[<hov2>free_@ %a@]" (expression2 reset_ctxt)  e
+    | Pexp_free (e,Pfree_to_stack) ->
+        pp f "@[<hov2>free_stack_@ %a@]" (expression2 reset_ctxt)  e
     | _ -> expression1 ctxt f x
 
 and expression1 ctxt f x =
