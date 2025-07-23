@@ -478,6 +478,9 @@ and expression i ppf x =
   | Pexp_malloc e ->
       line i ppf "Pexp_malloc\n";
       expression i ppf e
+  | Pexp_free e ->
+      line i ppf "Pexp_free\n";
+      expression i ppf e
   | Pexp_comprehension c ->
       line i ppf "Pexp_comprehension\n";
       comprehension_expression i ppf c
