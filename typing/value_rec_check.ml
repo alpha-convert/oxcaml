@@ -272,6 +272,8 @@ let classify_expression : Typedtree.expression -> sd =
     | Texp_override _
     | Texp_letop _ ->
         Dynamic
+    | Texp_free (e,_) ->
+        classify_expression env e
   and classify_value_bindings rec_flag env bindings =
     (* We use a non-recursive classification, classifying each
         binding with respect to the old environment
@@ -1061,6 +1063,8 @@ let rec expression : Typedtree.expression -> term_judg =
         expression exp2
       ]
     | Texp_hole _ -> empty
+    (* CR jcutler: I have no idea what this is about, make sure you understand *)
+    | Texp_free (e,_) -> expression e
 
 (* Function bodies.
     G |-{body} b : m

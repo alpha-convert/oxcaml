@@ -457,6 +457,7 @@ let expr sub {exp_loc; exp_extra; exp_desc; exp_env; exp_attributes; _} =
     sub.expr sub exp1;
     sub.expr sub exp2
   | Texp_hole _ -> ()
+  | Texp_free(exp,_) -> sub.expr sub exp
 
 
 let package_type sub {pack_fields; pack_txt; _} =

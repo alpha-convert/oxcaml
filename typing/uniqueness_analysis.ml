@@ -2408,6 +2408,7 @@ let rec check_uniqueness_exp ~overwrite (ienv : Ienv.t) exp : UF.t =
       Paths.mark
         (Usage.maybe_unique use occ)
         Learned_tags.empty Overwrites.empty p)
+  | Texp_free (e, _) -> check_uniqueness_exp ~overwrite:None ienv e
 
 (**
 Corresponds to the first mode.
