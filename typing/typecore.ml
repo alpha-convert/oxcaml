@@ -7086,7 +7086,6 @@ and type_expect_
         (match alloc_mode with
         | External -> unsupported External_allocation
         | Internal alloc_mode ->
-        begin
           submode ~loc ~env
             (Value.min_with_comonadic Areality Regionality.local)
             expected_mode;
@@ -7096,9 +7095,7 @@ and type_expect_
           with
           | Ok () -> ()
           | Error _ -> raise (Error (e.pexp_loc, env,
-              Cannot_stack_allocate alloc_mode.locality_context))
-        end
-        )
+              Cannot_stack_allocate alloc_mode.locality_context)))
       | Texp_list_comprehension _ -> unsupported List_comprehension
       | Texp_array_comprehension _ -> unsupported Array_comprehension
       | Texp_new _ -> unsupported Object
@@ -7176,7 +7173,28 @@ and type_expect_
       | Texp_tuple(el,_) -> Texp_tuple(el,External)
       | Texp_construct(loc,cstr,args,_) -> Texp_construct(loc,cstr,args,Some External)
       | Texp_variant(l, Some (arg,_)) -> Texp_variant(l,Some(arg,External))
-      | _ -> Misc.fatal_error
+      | Texp_variant(_, None)
+      | Texp_unreachable | Texp_src_pos
+      | Texp_ident (_, _, _, _, _) | Texp_constant _
+      | Texp_let (_, _, _) | Texp_letmutable (_, _) | Texp_function _
+      | Texp_apply (_, _, _, _, _) | Texp_match (_, _, _, _)
+      | Texp_try (_, _) | Texp_unboxed_tuple _
+      | Texp_record_unboxed_product _
+      | Texp_field (_, _, _, _, _, _) | Texp_unboxed_field (_, _, _, _, _)
+      | Texp_setfield (_, _, _, _, _) | Texp_array (_, _, _, _)
+      | Texp_list_comprehension _ | Texp_array_comprehension (_, _, _)
+      | Texp_ifthenelse (_, _, _) | Texp_sequence (_, _, _)
+      | Texp_while _ | Texp_for _
+      | Texp_send (_, _, _) | Texp_new (_, _, _, _)
+      | Texp_instvar (_, _, _) | Texp_mutvar _
+      | Texp_setinstvar (_, _, _, _) | Texp_setmutvar (_, _, _)
+      | Texp_override (_, _) | Texp_letmodule (_, _, _, _, _)
+      | Texp_letexception (_, _) | Texp_assert (_, _) | Texp_lazy _
+      | Texp_object (_, _) | Texp_pack _ | Texp_letop _
+      | Texp_extension_constructor (_, _) | Texp_open (_, _)
+      | Texp_probe _ | Texp_probe_is_enabled _ | Texp_exclave _
+      | Texp_overwrite (_, _) | Texp_hole _ ->
+          Misc.fatal_error
               "Parsetree for externally-allocable \
                term elaborated to Typedtree corresponding to something else"
       in

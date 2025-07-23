@@ -266,9 +266,9 @@ type primitive =
       mode : allocation_mode; boxed : bool }
   | Pstring_load_64 of { unsafe : bool; index_kind : array_index_kind;
       mode : allocation_mode; boxed : bool }
-  | Pstring_load_128 of
-      { unsafe : bool; index_kind : array_index_kind;
-      mode : allocation_mode; boxed: bool }
+  | Pstring_load_vec of
+      { size : boxed_vector; unsafe : bool; index_kind : array_index_kind;
+        mode : allocation_mode; boxed : bool }
   | Pbytes_load_16 of { unsafe : bool; index_kind : array_index_kind }
   | Pbytes_load_32 of { unsafe : bool; index_kind : array_index_kind;
       mode : allocation_mode; boxed : bool }
@@ -276,9 +276,9 @@ type primitive =
       mode : allocation_mode; boxed : bool }
   | Pbytes_load_64 of { unsafe : bool; index_kind : array_index_kind;
       mode : allocation_mode; boxed : bool }
-  | Pbytes_load_128 of
-      { unsafe : bool; index_kind : array_index_kind;
-      mode : allocation_mode; boxed : bool }
+  | Pbytes_load_vec of
+      { size : boxed_vector; unsafe : bool; index_kind : array_index_kind;
+        mode : allocation_mode; boxed : bool }
   | Pbytes_set_16 of { unsafe : bool; index_kind : array_index_kind }
   | Pbytes_set_32 of { unsafe : bool; index_kind : array_index_kind;
       boxed : bool }
@@ -297,7 +297,7 @@ type primitive =
       mode : allocation_mode; boxed : bool }
   | Pbigstring_load_64 of { unsafe : bool; index_kind : array_index_kind;
       mode : allocation_mode; boxed : bool }
-  | Pbigstring_load_128 of { aligned : bool; unsafe : bool;
+  | Pbigstring_load_vec of { size : boxed_vector; aligned : bool; unsafe : bool;
       index_kind : array_index_kind; mode : allocation_mode; boxed : bool }
   | Pbigstring_set_16 of { unsafe : bool; index_kind : array_index_kind }
   | Pbigstring_set_32 of { unsafe : bool; index_kind : array_index_kind;
@@ -309,22 +309,51 @@ type primitive =
   | Pbigstring_set_vec of { size : boxed_vector; aligned : bool; unsafe : bool;
       index_kind : array_index_kind; boxed : bool }
   (* load/set SIMD vectors in GC-managed arrays *)
-  | Pfloatarray_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Pfloat_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Pint_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Punboxed_float_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Punboxed_float32_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Punboxed_int32_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Punboxed_int64_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Punboxed_nativeint_array_load_128 of { unsafe : bool; mode : allocation_mode; boxed : bool }
-  | Pfloatarray_set_128 of { unsafe : bool; boxed : bool }
-  | Pfloat_array_set_128 of { unsafe : bool; boxed : bool }
-  | Pint_array_set_128 of { unsafe : bool; boxed : bool }
-  | Punboxed_float_array_set_128 of { unsafe : bool; boxed : bool }
-  | Punboxed_float32_array_set_128 of { unsafe : bool; boxed : bool }
-  | Punboxed_int32_array_set_128 of { unsafe : bool; boxed : bool }
-  | Punboxed_int64_array_set_128 of { unsafe : bool; boxed : bool }
-  | Punboxed_nativeint_array_set_128 of { unsafe : bool; boxed : bool }
+  | Pfloatarray_load_vec of { size : boxed_vector; unsafe : bool;
+                              index_kind : array_index_kind;
+                              mode : allocation_mode; boxed : bool }
+  | Pfloat_array_load_vec of { size : boxed_vector; unsafe : bool;
+                               index_kind : array_index_kind;
+                               mode : allocation_mode; boxed : bool }
+  | Pint_array_load_vec of { size : boxed_vector; unsafe : bool;
+                             index_kind : array_index_kind;
+                             mode : allocation_mode; boxed : bool }
+  | Punboxed_float_array_load_vec of { size : boxed_vector; unsafe : bool;
+                                       index_kind : array_index_kind;
+                                       mode : allocation_mode; boxed : bool }
+  | Punboxed_float32_array_load_vec of { size : boxed_vector; unsafe : bool;
+                                         index_kind : array_index_kind;
+                                         mode : allocation_mode; boxed : bool }
+  | Punboxed_int32_array_load_vec of { size : boxed_vector; unsafe : bool;
+                                       index_kind : array_index_kind;
+                                       mode : allocation_mode; boxed : bool }
+  | Punboxed_int64_array_load_vec of { size : boxed_vector; unsafe : bool;
+                                       index_kind : array_index_kind;
+                                       mode : allocation_mode; boxed : bool }
+  | Punboxed_nativeint_array_load_vec of { size : boxed_vector; unsafe : bool;
+                                           index_kind : array_index_kind;
+                                           mode : allocation_mode; boxed : bool }
+  | Pfloatarray_set_vec of { size : boxed_vector; unsafe : bool;
+                             index_kind : array_index_kind; boxed : bool }
+  | Pfloat_array_set_vec of { size : boxed_vector; unsafe : bool;
+                              index_kind : array_index_kind; boxed : bool }
+  | Pint_array_set_vec of { size : boxed_vector; unsafe : bool;
+                            index_kind : array_index_kind; boxed : bool }
+  | Punboxed_float_array_set_vec of { size : boxed_vector; unsafe : bool;
+                                      index_kind : array_index_kind;
+                                      boxed : bool }
+  | Punboxed_float32_array_set_vec of { size : boxed_vector; unsafe : bool;
+                                        index_kind : array_index_kind;
+                                        boxed : bool }
+  | Punboxed_int32_array_set_vec of { size : boxed_vector; unsafe : bool;
+                                      index_kind : array_index_kind;
+                                      boxed : bool }
+  | Punboxed_int64_array_set_vec of { size : boxed_vector; unsafe : bool;
+                                      index_kind : array_index_kind;
+                                      boxed : bool }
+  | Punboxed_nativeint_array_set_vec of { size : boxed_vector; unsafe : bool;
+                                          index_kind : array_index_kind;
+                                          boxed : bool }
   (* Compile time constants *)
   | Pctconst of compile_time_constant
   (* byte swap *)
@@ -1001,9 +1030,8 @@ let lfunction' ~kind ~params ~return ~body ~attr ~loc ~mode ~ret_mode =
      [Curried {nlocal=0}]. *)
   begin match mode, kind with
   | Alloc_external, _ ->
-      Misc.fatal_error
-        "Externally allocated functions are not supported."
-  | (Alloc_heap  ), Tupled -> ()
+      Misc.fatal_error "Externally-allocated functions are not supported."
+  | Alloc_heap, Tupled -> ()
   | Alloc_local, Tupled ->
      (* Tupled optimisation does not apply to local functions *)
      assert false
@@ -2637,9 +2665,9 @@ let may_allocate_in_region lam =
     | Lvar _ | Lmutvar _ | Lconst _ -> ()
 
     | Lfunction {mode=Alloc_heap} -> ()
-    | Lfunction {mode=Alloc_external} ->
-        Misc.fatal_error "Externally allocated functions are not supported"
     | Lfunction {mode=Alloc_local} -> raise Exit
+    | Lfunction {mode=Alloc_external} ->
+        Misc.fatal_error "Externally allocated functions are not supported."
 
     | Lapply {ap_mode=Alloc_local}
     | Lsend (_,_,_,_,_,Alloc_local,_,_) -> raise Exit

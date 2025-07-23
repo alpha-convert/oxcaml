@@ -2147,7 +2147,8 @@ let make_alloc_generic ~block_kind ~mode ~alloc_block_kind dbg tag wordsize args
       match (mode : Cmm.Alloc_mode.t) with
       | Local -> local_block_header ~block_kind tag wordsize
       | Heap -> block_header ~block_kind tag wordsize
-      | External -> Misc.fatal_error "Impossible."
+      | External ->
+        Misc.fatal_error "Impossible, externals are allocated with Cextcall"
     in
     Cop (Calloc (mode, alloc_block_kind), Cconst_natint (hdr, dbg) :: args, dbg)
   else
@@ -2167,14 +2168,13 @@ let make_alloc_generic ~block_kind ~mode ~alloc_block_kind dbg tag wordsize args
     in
     let caml_alloc_func, caml_alloc_args =
       match block_kind, (mode : Cmm.Alloc_mode.t) with
-      | Regular_block, Alloc_mode.Heap ->
-        "caml_alloc_shr_check_gc", [wordsize; tag]
+      | Regular_block, Heap -> "caml_alloc_shr_check_gc", [wordsize; tag]
       | Mixed_block { scannable_prefix }, Heap ->
         Mixed_block_support.assert_mixed_block_support ();
         "caml_alloc_mixed_shr_check_gc", [wordsize; tag; scannable_prefix]
       | Regular_block, External -> "caml_alloc_malloc", [wordsize; tag]
-      | Mixed_block { scannable_prefix = _ }, External ->
-        failwith "Unimplemented"
+      | Mixed_block { scannable_prefix }, External ->
+        "caml_alloc_mixed_malloc", [wordsize; tag; scannable_prefix]
       | _, Local ->
         Misc.fatal_error "Impossible, locals are allocated with Calloc."
     in

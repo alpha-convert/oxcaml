@@ -273,7 +273,8 @@ let fuse_method_arity (parent : fusable_function) : fusable_function =
     ->
       begin match transl_alloc_mode method_.alloc_mode with
       | Alloc_heap -> ()
-      | Alloc_external -> Misc.fatal_error "Externally-allocated method body!"
+      | Alloc_external ->
+          Misc.fatal_error "Externally-allocated methods are not supported."
       | Alloc_local ->
           (* If we support locally-allocated objects, we'll also have to
              pass the new mode back to the caller.

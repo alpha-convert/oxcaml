@@ -136,7 +136,7 @@ let split_direct_over_application apply
     match result_mode with
     | Alloc_heap -> None, Alloc_mode.For_applications.heap
     | Alloc_external ->
-      Misc.fatal_error "Should not be able to create external functions"
+      Misc.fatal_error "Externally allocated functions are not supported"
     | Alloc_local -> (
       match apply_alloc_mode with
       | Heap ->

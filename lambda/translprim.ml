@@ -1977,13 +1977,14 @@ let transl_primitive loc p env ty ~poly_mode ~poly_sort path =
             match allocation_mode, lambda_alloc_mode with
             | Alloc_heap, Alloc_heap
             | Alloc_local, Alloc_local -> ()
-            | Alloc_external, _ | _, Alloc_external -> ()
+            | Alloc_external, Alloc_external -> ()
             | Alloc_local, Alloc_heap ->
               (* This case is ok: the Lambda-derived information is more
                  precise.  A region will be inserted, likely unused, and
                  deleted by the middle end. *)
               ()
-            | Alloc_heap, Alloc_local ->
+            | (Alloc_external | Alloc_local | Alloc_heap),
+              (Alloc_external | Alloc_local | Alloc_heap) ->
               Misc.fatal_errorf "Locality mode incompatibility for:@ %a@ \
                   (from to_locality, %a; from primitive_may_allocate, %a)"
                 Printlambda.lambda body
@@ -2207,9 +2208,9 @@ let report_error ppf = function
         Style.inline_code "[@local_opt]" Style.inline_code "local_"
   | Invalid_stack_primitive Allocating_externally ->
       fprintf ppf
-        "This primitive always allocates on heap@ \
-        (maybe it should be declared with %a?)"
-        Style.inline_code "external_"
+        "This primitive always allocates externally@ \
+        (maybe it should be declared with %a or %a?)"
+        Style.inline_code "[@local_opt]" Style.inline_code "local_"
 
 let () =
   Location.register_error_of_exn
