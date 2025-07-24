@@ -685,6 +685,11 @@ and expression i ppf x =
     expression i ppf e2
   | Texp_hole _ ->
     line i ppf "Texp_hole"
+  | Texp_free (e,f) ->
+    (match f with
+     | Tfree_to_stack -> line i ppf "Texp_free stack";
+     | Tfree_to_unbox -> line i ppf "Texp_free");
+    expression i ppf e;
 
 and value_description i ppf x =
   line i ppf "value_description %a %a\n" fmt_ident x.val_id fmt_location

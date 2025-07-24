@@ -318,6 +318,11 @@ and expression_desc =
   | Texp_src_pos
   | Texp_overwrite of expression * expression
   | Texp_hole of unique_use
+  | Texp_free of expression * free_to
+
+and free_to =
+  | Tfree_to_unbox
+  | Tfree_to_stack
 
 and ident_kind =
   | Id_value

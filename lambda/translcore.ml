@@ -1282,6 +1282,7 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
   | Texp_hole _ ->
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
+  | Texp_free _ -> Misc.fatal_error "Unimplemented"
 
 
 and pure_module m =

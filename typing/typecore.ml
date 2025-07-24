@@ -4460,6 +4460,7 @@ let rec is_nonexpansive exp =
   (* Texp_hole can always be replaced by a field read from the old allocation,
      which is non-expansive: *)
   | Texp_hole _ -> true
+  | Texp_free (e,_) -> is_nonexpansive e
 
 and is_nonexpansive_prim (prim : Primitive.description) args =
   match prim.prim_name, args with
@@ -4915,7 +4916,7 @@ let check_partial_application ~statement exp =
             | Texp_let (_, _, e) | Texp_letmutable(_, e)
             | Texp_sequence (_, _, e) | Texp_open (_, e)
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
-            | Texp_exclave e ->
+            | Texp_exclave e | Texp_free (e,_) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -7251,7 +7252,11 @@ and type_expect_
       in
       unify_exp_types loc env exp_type ty_expected;
       (* CR jcutler: fix the output expr *)
-      let exp_desc = exp.exp_desc in
+      let free_to = match free_to with
+                    | Pfree_to_stack -> Tfree_to_stack
+                    | Pfree_to_unbox -> Tfree_to_unbox
+      in
+      let exp_desc = Texp_free(exp,free_to) in
       re {
         exp_desc = exp_desc;
         exp_type = exp_type;
