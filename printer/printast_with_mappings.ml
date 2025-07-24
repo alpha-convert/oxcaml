@@ -478,8 +478,12 @@ and expression i ppf x =
   | Pexp_malloc e ->
       line i ppf "Pexp_malloc\n";
       expression i ppf e
-  | Pexp_free e ->
-      line i ppf "Pexp_free\n";
+  | Pexp_free (e,f) ->
+      (match f with
+       | Pfree_to_unbox ->
+          line i ppf "Pexp_free\n";
+       | Pfree_to_stack ->
+          line i ppf "Pexp_free stack\n");
       expression i ppf e
   | Pexp_comprehension c ->
       line i ppf "Pexp_comprehension\n";

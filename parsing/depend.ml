@@ -318,7 +318,7 @@ let rec add_expr bv exp =
   | Pexp_extension e -> handle_extension e
   | Pexp_stack e -> add_expr bv e
   | Pexp_malloc e -> add_expr bv e
-  | Pexp_free e -> add_expr bv e
+  | Pexp_free (e,_) -> add_expr bv e
   | Pexp_overwrite (e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_hole -> ()
   | Pexp_unreachable -> ()

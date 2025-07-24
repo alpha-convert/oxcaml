@@ -217,8 +217,8 @@ type unsupported_external_allocation =
   | Array
 
 type unsupported_free =
-  | No_unboxed_version of Path.t
-  | Tycon
+  | No_unboxed_version of type_expr
+  | Unfreeable of type_expr
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int

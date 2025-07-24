@@ -154,8 +154,8 @@ type unsupported_external_allocation =
   | Array
 
 type unsupported_free =
-  | No_unboxed_version of Path.t
-  | Tycon
+  | No_unboxed_version of type_expr
+  | Unfreeable of type_expr
 
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
@@ -7185,12 +7185,31 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-  | Pexp_free e ->
+  | Pexp_free (e,free_to) ->
+      let unsupported reason =
+        raise (Error (e.pexp_loc, env, Unsupported_free reason))
+      in
+      let warn_not_principal () =
+        (* CR jcutler: write the message*)
+        let msg = "" in
+        Location.prerr_warning loc (Warnings.Not_principal msg)
+      in
+      let get_expanded_desc env ty = get_desc (Ctype.expand_head env ty) in
+
       let inner_ty =
         newvar (Jkind.Builtin.value_or_null
                     ~why:(Type_argument
                           { parent_path = Predef.path_mallocd ;
                             position = 1; arity = 1}))
+      in
+      let get_unboxed_version p env =
+          let decl =
+            try Env.find_type p env
+            with Not_found -> unsupported (No_unboxed_version inner_ty)
+          in
+          match decl.type_unboxed_version with
+          | None -> unsupported (No_unboxed_version inner_ty)
+          | _ -> Path.unboxed_version p
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =
@@ -7198,37 +7217,38 @@ and type_expect_
               (Value.of_const ({Value.Const.max with uniqueness = Unique}))
               expected_mode
       in
-      let unsupported reason =
-        raise (Error (e.pexp_loc, env, Unsupported_free reason))
-      in
-      let get_unboxed_version p env =
-          let decl =
-            try Env.find_type p env
-            with Not_found -> unsupported (No_unboxed_version p)
-          in
-          match decl.type_unboxed_version with
-          | None -> unsupported (No_unboxed_version p)
-          | _ -> Path.unboxed_version p
-        in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
-      let warn_not_principal () =
-        (* CR jcutler: write the message*)
-        let msg = "" in
-        Location.prerr_warning loc (Warnings.Not_principal msg)
+      let exp_type =
+        match free_to with
+        | Pfree_to_unbox ->
+          (* CR jcutler: i don't think this principality check is working... *)
+          if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
+          (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
+          begin match get_expanded_desc env inner_ty with
+          | Ttuple args -> newty (Tunboxed_tuple(args))
+          | Tconstr(p,args,m) ->
+              let p = get_unboxed_version p env in
+              newty (Tconstr(p,args,m))
+          (* CR jcutler: test this code path  *)
+          | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
+          | _ -> unsupported (Unfreeable inner_ty)
+          end
+        | Pfree_to_stack ->
+            (match get_expanded_desc env inner_ty with
+             | Tconstr(p,_,_) ->
+                  let decl = Env.find_type p env in
+                  begin match decl.type_kind with
+                  | Type_abstract _ | Type_open | Type_record_unboxed_product _ -> unsupported (Unfreeable inner_ty)
+                  | Type_record _| Type_variant _ -> ()
+                  end
+             | Ttuple _ | Tvariant _ -> ()
+             | _ -> unsupported (Unfreeable inner_ty)
+            );
+            submode ~loc ~env
+              (Value.min_with_comonadic Areality Regionality.local)
+              expected_mode;
+            inner_ty
       in
-      (* CR jcutler: maybe instead check if mallocd_ty is principal *)
-      if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
-      let exp_type_desc =
-        (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
-        match get_desc (Ctype.expand_head env inner_ty) with
-        | Ttuple args -> Tunboxed_tuple(args)
-        | Tconstr(p,args,m) ->
-            let p = get_unboxed_version p env in
-            Tconstr(p,args,m)
-        (* CR jcutler: test this code path  *)
-        | _ -> unsupported Tycon
-      in
-      let exp_type = newty exp_type_desc in
       unify_exp_types loc env exp_type ty_expected;
       (* CR jcutler: fix the output expr *)
       let exp_desc = exp.exp_desc in
@@ -11596,13 +11616,16 @@ let report_error ~loc env =
   | Unsupported_free reason ->
         match reason with
         (* CR jcutler: actually print the type! *)
-        | No_unboxed_version _p ->
+        | No_unboxed_version typ ->
             Location.errorf ~loc
-              "Type constructor does not have an unboxed version, try free_stack_"
-        (* CR jcutler: Fix this... *)
-        | Tycon ->
+              "Type %a does not have an unboxed version, try free_stack_"
+              (Style.as_inline_code Printtyp.type_expr) typ
+        | Unfreeable typ ->
             Location.errorf ~loc
-              "Could not free this type constructor"
+              "Cannot free values of type %a"
+              (Style.as_inline_code Printtyp.type_expr) typ
+
+
 
 
 let report_error ~loc env err =

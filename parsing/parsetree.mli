@@ -502,7 +502,6 @@ and expression_desc =
       (** [fun (type t) -> E] or [fun (type t : k) -> E] *)
   | Pexp_pack of module_expr
       (** [(module ME)].
-
            [(module ME : S)] is represented as
            [Pexp_constraint(Pexp_pack ME, Ptyp_package S)] *)
   | Pexp_open of open_declaration * expression
@@ -516,7 +515,7 @@ and expression_desc =
   | Pexp_unreachable  (** [.] *)
   | Pexp_stack of expression (** stack_ exp *)
   | Pexp_malloc of expression (** malloc_ exp *)
-  | Pexp_free of expression (** free_ exp *)
+  | Pexp_free of expression * free_to (** free_ exp *)
   | Pexp_comprehension of comprehension_expression
     (** [[? BODY ...CLAUSES... ?]], where:
           - [?] is either [""] (list), [:] (immutable array), or [|] (array).
@@ -844,6 +843,10 @@ and extension_constructor_kind =
        *)
   | Pext_rebind of Longident.t loc
   (** [Pext_rebind(D)] re-export the constructor [D] with the new name [C] *)
+
+and free_to =
+  | Pfree_to_unbox
+  | Pfree_to_stack
 
 (** {1 Class language} *)
 (** {2 Type expressions for the class language} *)
