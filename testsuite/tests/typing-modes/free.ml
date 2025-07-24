@@ -50,32 +50,42 @@ type t = {x : int; y : int}
 let f (t : t mallocd) = free_ t
 [%%expect {|
 type t = { x : int; y : int; }
-val f : t mallocd @ unique -> #(x:int * y:int) = <fun>
+val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = {x : int; y : int}
 let f (t : t mallocd) = free_ t
 [%%expect {|
 type t = { x : int; y : int; }
-val f : t mallocd @ unique -> #(x:int * y:int) = <fun>
+val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = {mutable x : string; y : int}
 let f (t : t mallocd) = free_ t
 [%%expect {|
+type t = { mutable x : string; y : int; }
+val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = Foo of {z : char ; x : string; y : int}
 let f (t : t mallocd) = free_ t
 [%%expect {|
 type t = Foo of { z : char; x : string; y : int; }
-val f : t mallocd @ unique -> #(z:char * x:string * y:int) = <fun>
+Line 2, characters 30-31:
+2 | let f (t : t mallocd) = free_ t
+                                  ^
+Error: Type constructor does not have an unboxed version, try free_stack_
 |}]
 
 
 type t = Foo of {mutable x : string; y : int}
 let f (t : t mallocd) = free_ t
 [%%expect {|
+type t = Foo of { mutable x : string; y : int; }
+Line 2, characters 30-31:
+2 | let f (t : t mallocd) = free_ t
+                                  ^
+Error: Type constructor does not have an unboxed version, try free_stack_
 |}]
 
 (*CR jcutler: ensure this works with module business.
@@ -90,5 +100,5 @@ type t = Pack : 'a -> t
 Line 2, characters 30-31:
 2 | let f (t : t mallocd) = free_ t
                                   ^
-Error: Freeing GADTs is not supported
+Error: Type constructor does not have an unboxed version, try free_stack_
 |}]

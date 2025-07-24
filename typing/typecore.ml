@@ -154,9 +154,8 @@ type unsupported_external_allocation =
   | Array
 
 type unsupported_free =
-  | Unknown_shape
-  | Not_an_allocation
-  | Gadt
+  | No_unboxed_version of Path.t
+  | Tycon
 
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
@@ -7202,13 +7201,14 @@ and type_expect_
       let unsupported reason =
         raise (Error (e.pexp_loc, env, Unsupported_free reason))
       in
-      let get_component_types env path args =
-          let decl = Env.find_type path env in
-          let apply_args inner_ty =
-            if List.length args = 0 then inner_ty
-            else apply env decl.type_params inner_ty args
+      let get_unboxed_version p env =
+          let decl =
+            try Env.find_type p env
+            with Not_found -> unsupported (No_unboxed_version p)
           in
-            (decl, apply_args)
+          match decl.type_unboxed_version with
+          | None -> unsupported (No_unboxed_version p)
+          | _ -> Path.unboxed_version p
         in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
       let warn_not_principal () =
@@ -7218,30 +7218,17 @@ and type_expect_
       in
       (* CR jcutler: maybe instead check if mallocd_ty is principal *)
       if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
-      let exp_type =
-        (* CR jcutler: ensure you drop all of the mutable fields. *)
-        (match get_desc inner_ty with
-         | Ttuple(args) -> Tunboxed_tuple(args)
-         | Tconstr(p,args,_) ->
-            let (decl,apply_args) = get_component_types env p args in
-            let components = (match decl.type_kind with
-              | Type_record (fields, _, _) ->
-                  List.map (fun field -> (Some (Ident.name (field.Types.ld_id)), apply_args field.Types.ld_type)) fields
-              | Type_variant ([ctr], _, _) ->
-                if ctr.cd_res <> None then unsupported Gadt;
-                begin match ctr.cd_args with
-                | Cstr_tuple arg_types ->
-                    List.map (fun ca -> (None, apply_args ca.Types.ca_type)) arg_types
-                | Cstr_record fields ->
-                    List.map (fun field -> (Some (Ident.name (field.Types.ld_id)), apply_args field.Types.ld_type)) fields
-                end
-              | Type_variant (_, _, _) | Type_abstract _ | Type_open -> unsupported Unknown_shape
-              | Type_record_unboxed_product _ -> unsupported Not_an_allocation)
-              in
-              Tunboxed_tuple components
-         | _ -> Misc.fatal_error "Unimplemented")
-        |> newty
+      let exp_type_desc =
+        (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
+        match get_desc (Ctype.expand_head env inner_ty) with
+        | Ttuple args -> Tunboxed_tuple(args)
+        | Tconstr(p,args,m) ->
+            let p = get_unboxed_version p env in
+            Tconstr(p,args,m)
+        (* CR jcutler: test this code path  *)
+        | _ -> unsupported Tycon
       in
+      let exp_type = newty exp_type_desc in
       unify_exp_types loc env exp_type ty_expected;
       (* CR jcutler: fix the output expr *)
       let exp_desc = exp.exp_desc in
@@ -11608,15 +11595,14 @@ let report_error ~loc env =
         (* CR jcutler: message here. *)
   | Unsupported_free reason ->
         match reason with
-        | Unknown_shape ->
+        (* CR jcutler: actually print the type! *)
+        | No_unboxed_version _p ->
             Location.errorf ~loc
-              "Type does not have a single shape, try free_stack_"
-        | Not_an_allocation ->
+              "Type constructor does not have an unboxed version, try free_stack_"
+        (* CR jcutler: Fix this... *)
+        | Tycon ->
             Location.errorf ~loc
-              "Type does not require an allocation"
-        | Gadt ->
-            Location.errorf ~loc
-              "Freeing GADTs is not supported"
+              "Could not free this type constructor"
 
 
 let report_error ~loc env err =

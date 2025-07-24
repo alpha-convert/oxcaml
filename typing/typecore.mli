@@ -217,10 +217,8 @@ type unsupported_external_allocation =
   | Array
 
 type unsupported_free =
-  | Unknown_shape
-  | Not_an_allocation
-  | Gadt
-
+  | No_unboxed_version of Path.t
+  | Tycon
 
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
