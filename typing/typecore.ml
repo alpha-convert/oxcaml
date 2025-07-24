@@ -7086,7 +7086,6 @@ and type_expect_
         (match alloc_mode with
         | External -> unsupported External_allocation
         | Internal alloc_mode ->
-        begin
           submode ~loc ~env
             (Value.min_with_comonadic Areality Regionality.local)
             expected_mode;
@@ -7096,9 +7095,7 @@ and type_expect_
           with
           | Ok () -> ()
           | Error _ -> raise (Error (e.pexp_loc, env,
-              Cannot_stack_allocate alloc_mode.locality_context))
-        end
-        )
+              Cannot_stack_allocate alloc_mode.locality_context)))
       | Texp_list_comprehension _ -> unsupported List_comprehension
       | Texp_array_comprehension _ -> unsupported Array_comprehension
       | Texp_new _ -> unsupported Object
@@ -7176,6 +7173,7 @@ and type_expect_
       | Texp_tuple(el,_) -> Texp_tuple(el,External)
       | Texp_construct(loc,cstr,args,_) -> Texp_construct(loc,cstr,args,Some External)
       | Texp_variant(l, Some (arg,_)) -> Texp_variant(l,Some(arg,External))
+      (* CR jcutler: make this match non-brittle *)
       | _ -> Misc.fatal_error
               "Parsetree for externally-allocable \
                term elaborated to Typedtree corresponding to something else"

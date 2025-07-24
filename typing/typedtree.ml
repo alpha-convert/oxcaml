@@ -113,12 +113,11 @@ let print_unique_use ppf (u,l) =
     (Mode.Linearity.print ()) l
 
 type alloc_mode =
-Internal of
-{
-  mode : Mode.Alloc.r;
-  locality_context : Env.locality_context option;
-}
-| External
+  | Internal of {
+      mode : Mode.Alloc.r;
+      locality_context : Env.locality_context option
+    }
+  | External
 
 type allocator =
   | Allocator_heap
