@@ -461,11 +461,8 @@ let simplify_direct_partial_application ~simplify_expr dacc apply
         dacc )
     | Ok (new_closure_alloc_mode, first_complex_local_param) ->
       (match closure_alloc_mode_from_type with
-      | Heap_or_local -> ()
+      | Unknown -> ()
       | Heap -> ()
-      | External ->
-        Misc.fatal_error
-          "New closure alloc mode cannot be External, this is not supported."
       | Local -> (
         match (new_closure_alloc_mode : Alloc_mode.For_applications.t) with
         | Local _ -> ()

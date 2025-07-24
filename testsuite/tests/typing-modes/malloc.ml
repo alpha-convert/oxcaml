@@ -931,7 +931,7 @@ let f (x @ external_) (y @ external_) = stack_ (malloc_ (x,y))
 Line 1, characters 47-62:
 1 | let f (x @ external_) (y @ external_) = stack_ (malloc_ (x,y))
                                                    ^^^^^^^^^^^^^^^
-Error: This expression is not an allocation site.
+Error: Stack allocating externally allocated expressions is unsupported yet.
 |}]
 
 let f (x @ external_) (y @ external_) = malloc_ (stack_ (x,y))
