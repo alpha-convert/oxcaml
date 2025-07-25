@@ -7,11 +7,26 @@ external is_young : ('a : word) -> bool = "is_young" "is_young"
 
 external print_external_block_entries : ('a : word) -> int64# -> string -> unit = "print_block" "print_block"
 
+
 let is_a_malloc name ~num_fields f =
+  let prebefore = Gc.allocated_bytes () in
   let before = Gc.allocated_bytes () in
-  let v = f () in
+  let v = Sys.opaque_identity f () in
   let after = Gc.allocated_bytes () in
-  Format.printf "%s: bytes allocated: %f, in the small heap: %b\n" name (after -. before) (is_young v);
+  let delta =
+    int_of_float ((after -. before) -. (before -. prebefore))
+      / (Sys.word_size/8)
+  in
+  let msg =
+    match delta with
+    | 0 -> "No GC-visible Allocation"
+    | n -> "GC-visible Allocation ocurred"
+  in
+  let location =
+    if is_young v then "in small heap"
+    else "outside small heap"
+  in
+  Format.printf "%s: %s, result value is %s\n" name msg location;
   Stdlib.flush Stdlib.stdout;
   print_external_block_entries v num_fields name;
   Format.printf "\n";

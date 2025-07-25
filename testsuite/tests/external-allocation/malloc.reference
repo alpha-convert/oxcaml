@@ -1,56 +1,56 @@
-tuple: bytes allocated: 80.000000, in the small heap: false
+tuple: No GC-visible Allocation, result value is outside small heap
 
-record: bytes allocated: 80.000000, in the small heap: false
+record: No GC-visible Allocation, result value is outside small heap
 
-record_mixed: bytes allocated: 80.000000, in the small heap: false
+record_mixed: No GC-visible Allocation, result value is outside small heap
 
-mixed_int64: bytes allocated: 80.000000, in the small heap: false
+mixed_int64: No GC-visible Allocation, result value is outside small heap
 
-mixed_float: bytes allocated: 80.000000, in the small heap: false
+mixed_float: No GC-visible Allocation, result value is outside small heap
 
-mixed_int32: bytes allocated: 80.000000, in the small heap: false
+mixed_int32: No GC-visible Allocation, result value is outside small heap
 
-bool_record_mixed: bytes allocated: 80.000000, in the small heap: false
+bool_record_mixed: No GC-visible Allocation, result value is outside small heap
 
-variant_allocation: bytes allocated: 80.000000, in the small heap: false
+variant_allocation: No GC-visible Allocation, result value is outside small heap
 
-variant_string_arg: bytes allocated: 80.000000, in the small heap: false
+variant_string_arg: No GC-visible Allocation, result value is outside small heap
 
-int_variant_single: bytes allocated: 80.000000, in the small heap: false
+int_variant_single: No GC-visible Allocation, result value is outside small heap
 
-int_variant_tuple: bytes allocated: 80.000000, in the small heap: false
+int_variant_tuple: No GC-visible Allocation, result value is outside small heap
 
-int_variant_const_tuple: bytes allocated: 80.000000, in the small heap: false
+int_variant_const_tuple: No GC-visible Allocation, result value is outside small heap
 
-option_allocation: bytes allocated: 80.000000, in the small heap: false
+option_allocation: No GC-visible Allocation, result value is outside small heap
 
-option_string_some: bytes allocated: 80.000000, in the small heap: false
+option_string_some: No GC-visible Allocation, result value is outside small heap
 
-single_element_list: bytes allocated: 80.000000, in the small heap: false
+single_element_list: No GC-visible Allocation, result value is outside small heap
 
-gadt_allocation: bytes allocated: 80.000000, in the small heap: false
+gadt_allocation: No GC-visible Allocation, result value is outside small heap
 
-gadt_const_int: bytes allocated: 80.000000, in the small heap: false
+gadt_const_int: No GC-visible Allocation, result value is outside small heap
 
-gadt_const_string: bytes allocated: 80.000000, in the small heap: false
+gadt_const_string: No GC-visible Allocation, result value is outside small heap
 
-typed_gadt_int: bytes allocated: 80.000000, in the small heap: false
+typed_gadt_int: No GC-visible Allocation, result value is outside small heap
 
-typed_gadt_string: bytes allocated: 80.000000, in the small heap: false
+typed_gadt_string: No GC-visible Allocation, result value is outside small heap
 
-typed_gadt_const_int: bytes allocated: 80.000000, in the small heap: false
+typed_gadt_const_int: No GC-visible Allocation, result value is outside small heap
 
-poly_variant: bytes allocated: 80.000000, in the small heap: false
+poly_variant: No GC-visible Allocation, result value is outside small heap
 
-poly_apple_const: bytes allocated: 80.000000, in the small heap: false
+poly_apple_const: No GC-visible Allocation, result value is outside small heap
 
-poly_orange_const: bytes allocated: 80.000000, in the small heap: false
+poly_orange_const: No GC-visible Allocation, result value is outside small heap
 
-poly_orange_var: bytes allocated: 80.000000, in the small heap: false
+poly_orange_var: No GC-visible Allocation, result value is outside small heap
 
-poly_int_tag: bytes allocated: 80.000000, in the small heap: false
+poly_int_tag: No GC-visible Allocation, result value is outside small heap
 
-poly_string_tag: bytes allocated: 80.000000, in the small heap: false
+poly_string_tag: No GC-visible Allocation, result value is outside small heap
 
 Test tuple:
   Field 0: 3
