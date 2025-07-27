@@ -7242,15 +7242,11 @@ and type_expect_
               expected_mode;
             inner_ty
       in
-      (* CR jcutler: i don't think this principality check is working... *)
       if not (is_principal inner_ty) && !Clflags.principal then begin
         let msg =
           Format.asprintf
-            "typing this %s eagerly pattern matches on\
+            "typing this term eagerly matches on \
              the type %a, which"
-            (match free_to with
-            | Pfree_to_unbox -> "free_" 
-            | Pfree_to_stack -> "free_stack_")
             Printtyp.type_expr inner_ty
         in
         Location.prerr_warning loc (Warnings.Not_principal msg)
