@@ -155,6 +155,7 @@ type unsupported_external_allocation =
 
 type unsupported_free =
   | No_unboxed_version of type_expr
+  | Decl_not_found of Path.t
   | Unfreeable of type_expr
 
 let print_unsupported_external_allocation ppf = function
@@ -7190,13 +7191,7 @@ and type_expect_
       let unsupported reason =
         raise (Error (e.pexp_loc, env, Unsupported_free reason))
       in
-      let warn_not_principal () =
-        (* CR jcutler: write the message*)
-        let msg = "" in
-        Location.prerr_warning loc (Warnings.Not_principal msg)
-      in
       let get_expanded_desc env ty = get_desc (Ctype.expand_head env ty) in
-
       let inner_ty =
         newvar (Jkind.Builtin.value_or_null
                     ~why:(Type_argument
@@ -7206,7 +7201,7 @@ and type_expect_
       let get_unboxed_version p env =
           let decl =
             try Env.find_type p env
-            with Not_found -> unsupported (No_unboxed_version inner_ty)
+            with Not_found -> unsupported (Decl_not_found p)
           in
           match decl.type_unboxed_version with
           | None -> unsupported (No_unboxed_version inner_ty)
@@ -7215,22 +7210,19 @@ and type_expect_
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =
             mode_coerce
-              (Value.of_const ({Value.Const.max with uniqueness = Unique}))
+              (Value.of_const {Value.Const.max with uniqueness = Unique})
               expected_mode
       in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
       let exp_type =
         match free_to with
         | Pfree_to_unbox ->
-          (* CR jcutler: i don't think this principality check is working... *)
-          if not (Ctype.is_principal mallocd_ty) then (warn_not_principal ());
           (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
           begin match get_expanded_desc env inner_ty with
           | Ttuple args -> newty (Tunboxed_tuple(args))
           | Tconstr(p,args,m) ->
               let p = get_unboxed_version p env in
               newty (Tconstr(p,args,m))
-          (* CR jcutler: test this code path  *)
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
           end
@@ -7239,19 +7231,31 @@ and type_expect_
              | Tconstr(p,_,_) ->
                   let decl = Env.find_type p env in
                   begin match decl.type_kind with
-                  | Type_abstract _ | Type_open | Type_record_unboxed_product _ -> unsupported (Unfreeable inner_ty)
+                  | Type_abstract _  -> unsupported (Unfreeable inner_ty)
+                  | Type_open | Type_record_unboxed_product _ -> unsupported (Unfreeable inner_ty)
                   | Type_record _| Type_variant _ -> ()
                   end
              | Ttuple _ | Tvariant _ -> ()
-             | _ -> unsupported (Unfreeable inner_ty)
-            );
+             | _ -> unsupported (Unfreeable inner_ty));
             submode ~loc ~env
               (Value.min_with_comonadic Areality Regionality.local)
               expected_mode;
             inner_ty
       in
+      (* CR jcutler: i don't think this principality check is working... *)
+      if not (is_principal inner_ty) && !Clflags.principal then begin
+        let msg =
+          Format.asprintf
+            "typing this %s eagerly pattern matches on\
+             the type %a, which"
+            (match free_to with
+            | Pfree_to_unbox -> "free_" 
+            | Pfree_to_stack -> "free_stack_")
+            Printtyp.type_expr inner_ty
+        in
+        Location.prerr_warning loc (Warnings.Not_principal msg)
+      end;
       unify_exp_types loc env exp_type ty_expected;
-      (* CR jcutler: fix the output expr *)
       let free_to = match free_to with
                     | Pfree_to_stack -> Tfree_to_stack
                     | Pfree_to_unbox -> Tfree_to_unbox
@@ -11625,6 +11629,10 @@ let report_error ~loc env =
             Location.errorf ~loc
               "Type %a does not have an unboxed version, try free_stack_"
               (Style.as_inline_code Printtyp.type_expr) typ
+        | Decl_not_found p ->
+            Location.errorf ~loc
+              "Type %a does not have a definition in scope, cannot free it."
+              Path.print p
         | Unfreeable typ ->
             Location.errorf ~loc
               "Cannot free values of type %a"

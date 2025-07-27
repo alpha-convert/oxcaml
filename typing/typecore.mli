@@ -218,6 +218,7 @@ type unsupported_external_allocation =
 
 type unsupported_free =
   | No_unboxed_version of type_expr
+  | Decl_not_found of Path.t
   | Unfreeable of type_expr
 
 type error =

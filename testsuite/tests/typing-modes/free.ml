@@ -2,35 +2,38 @@
  expect;
 *)
 
-let f (x @ external_) (y @ external_) =
-  free_ (malloc_ (x,y))
-[%%expect{|
-val f : 'a @ unique -> 'b @ unique -> #('a * 'b) = <fun>
-|}]
-
-let f (x : (int * int) mallocd) =
-  free_ x
-[%%expect {|
-val f : (int * int) mallocd @ unique -> #(int * int) = <fun>
-|}]
-
-let f (x : (int * int) mallocd @ aliased) =
+(* Type must be mallocd *)
+let f (x : int) =
   free_ x
 [%%expect {|
 Line 2, characters 8-9:
 2 |   free_ x
             ^
+Error: This expression has type "int" but an expression was expected of type
+         "'a mallocd"
+|}]
+
+(* Free requires its argument uniquely,
+  this is checked first, before the type *)
+let f (x @ aliased) = free_ x
+[%%expect{|
+Line 1, characters 28-29:
+1 | let f (x @ aliased) = free_ x
+                                ^
 Error: This value is "aliased" but expected to be "unique".
 |}]
 
-
-let f (x : ('a * 'a) mallocd) (y : 'a) =
-  let #(_,_) = free_ x in
-  y + 1
-[%%expect {|
-val f : (int * int) mallocd @ unique -> int -> int = <fun>
+(* Cannot free thing of unknown type... *)
+let f (x : 'a mallocd) = free_ x
+[%%expect{|
+Line 1, characters 31-32:
+1 | let f (x : 'a mallocd) = free_ x
+                                   ^
+Error: Cannot free values of type "'a"
 |}]
 
+(* The typechecking of free is annoyingly non-principal. *)
+(* CR jcutler: this should give the warning... *)
 let [@warning "-10"] f (x : 'a mallocd) (y : 'a) =
   let (a,b) = y in
   free_ x;
@@ -50,72 +53,110 @@ Line 2, characters 16-17:
 Error: Cannot free values of type "'a"
 |}]
 
-let f (x : int) =
-  free_ x
+(*
+Successful free-to-unbox of tuples
+*)
+let f (x : (_ * _) mallocd)  = free_ x
 [%%expect {|
-Line 2, characters 8-9:
-2 |   free_ x
-            ^
-Error: This expression has type "int" but an expression was expected of type
-         "'a mallocd"
+val f : ('a * 'b) mallocd @ unique -> #('a * 'b) = <fun>
 |}]
 
-(* CR jcutler: this is a terrible error message *)
-let f (x : int mallocd) =
-  free_ x
+let f (x : (_ * _ * _) mallocd)  = free_ x
 [%%expect {|
-Line 2, characters 8-9:
-2 |   free_ x
-            ^
-Error: Type "int" does not have an unboxed version, try free_stack_
+val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 |}]
 
-(* CR jcutler for ccasinghino: we can't allocate these atm, but should be find to
-   allow people to free them? *)
-let f (x : int64 mallocd) =
-  free_ x
+type 'a t = 'a * 'a
+let f (x : 'a t mallocd)  = free_ x
+[%%expect {|
+type 'a t = 'a * 'a
+val f : 'a t mallocd @ unique -> #('a * 'a) = <fun>
+|}]
+
+type 'a t = 'a * 'a * 'a
+let f (x : (_ * _ * _) mallocd)  = free_ x
+[%%expect {|
+type 'a t = 'a * 'a * 'a
+val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
+|}]
+
+(* Succssful free-to-unbox of regular records of various sorts... *)
+type t = {x : int; y : string @@ external_}
+let f (x : t mallocd)  = free_ x
+[%%expect {|
+type t = { x : int; y : string @@ external_; }
+val f : t mallocd @ unique -> t# = <fun>
+|}]
+
+type t = {x : int; y : string}
+let f (x : t mallocd)  = free_ x
+[%%expect {|
+type t = { x : int; y : string; }
+val f : t mallocd @ unique -> t# = <fun>
+|}]
+
+type t = {mutable x : int; mutable y : string @@ external_}
+let f (x : t mallocd)  = free_ x
+[%%expect {|
+type t = { mutable x : int; mutable y : string @@ external_; }
+val f : t mallocd @ unique -> t# = <fun>
+|}]
+
+type t = {mutable x : int64#; mutable y : string @@ external_}
+let f (x : t mallocd)  = free_ x
+[%%expect {|
+type t = { mutable x : int64#; mutable y : string @@ external_; }
+val f : t mallocd @ unique -> t# = <fun>
+|}]
+
+type t = {mutable x : int64#; y : float#}
+let f (x : t mallocd)  = free_ x
+[%%expect {|
+type t = { mutable x : int64#; y : float#; }
+val f : t mallocd @ unique -> t# = <fun>
+|}]
+
+(* Some things have unbxoed versions even though we can'externally t allocate
+them yet, but it's fine to say that they can be free.
+*)
+let f (x : float mallocd) = free_ x
+[%%expect {|
+val f : float mallocd @ unique -> float# = <fun>
+|}]
+
+let f (x : int64 mallocd) = free_ x
 [%%expect {|
 val f : int64 mallocd @ unique -> int64# = <fun>
 |}]
 
-let f (x : ('a * 'a) mallocd) =
-  free_ x
-[%%expect{|
-val f : ('a * 'a) mallocd @ unique -> #('a * 'a) = <fun>
-|}]
-
-type t = {x : int; y : int}
-let f (t : t mallocd) = free_ t
+let f (x : int32 mallocd) = free_ x
 [%%expect {|
-type t = { x : int; y : int; }
-val f : t mallocd @ unique -> t# = <fun>
+val f : int32 mallocd @ unique -> int32# = <fun>
 |}]
 
-type 'a t = {x : 'a; y : 'a}
-let f (t : 'a t mallocd) = free_ t
+type t = float
+let f (x : t mallocd) = free_ x
 [%%expect {|
-type 'a t = { x : 'a; y : 'a; }
-val f : 'a t mallocd @ unique -> 'a t# = <fun>
+type t = float
+val f : t mallocd @ unique -> float# = <fun>
 |}]
 
-type t = {mutable x : string; y : int}
-let f (t : t mallocd) = free_ t
+type t = int64
+let f (x : t mallocd) = free_ x
 [%%expect {|
-type t = { mutable x : string; y : int; }
-val f : t mallocd @ unique -> t# = <fun>
+type t = int64
+val f : t mallocd @ unique -> int64# = <fun>
 |}]
 
-type t = Foo of {z : char ; x : string; y : int}
-let f (t : t mallocd) = free_ t
+type t = int32
+let f (x : t mallocd) = free_ x
 [%%expect {|
-type t = Foo of { z : char; x : string; y : int; }
-Line 2, characters 30-31:
-2 | let f (t : t mallocd) = free_ t
-                                  ^
-Error: Type "t" does not have an unboxed version, try free_stack_
+type t = int32
+val f : t mallocd @ unique -> int32# = <fun>
 |}]
 
-
+(* Finding the unboxed version of a type works deeply through modules,
+if the type is exposed in the signature *)
 module M : sig
   type t = int * int
 end = struct
@@ -170,6 +211,30 @@ Line 7, characters 32-33:
 Error: Type "M.t" does not have an unboxed version, try free_stack_
 |}]
 
+
+(* Cannot unboxed-free sum types, they do not have unboxed versions,
+even those with definite shape *)
+type t = Foo of int
+let f (x : t mallocd) = free_ x
+[%%expect {|
+type t = Foo of int
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+type t = Foo of int | Bar of char
+let f (x : t mallocd) = free_ x
+[%%expect {|
+type t = Foo of int | Bar of char
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+(* GADTs work the same as variants *)
 type t = Pack : 'a. 'a -> t
 let f (t : t mallocd) = free_ t
 [%%expect{|
@@ -178,6 +243,90 @@ Line 2, characters 30-31:
 2 | let f (t : t mallocd) = free_ t
                                   ^
 Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+type t = Pack : 'a. 'a -> t | Secret_other_option : int -> t
+let f (t : t mallocd) = free_ t
+[%%expect{|
+type t = Pack : 'a -> t | Secret_other_option : int -> t
+Line 2, characters 30-31:
+2 | let f (t : t mallocd) = free_ t
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+(* Cannot unboxed-free a polymorphic variant, even with definite shape *)
+
+let f (x : [`Foo of int] mallocd) = free_ x 
+[%%expect{|
+Line 1, characters 42-43:
+1 | let f (x : [`Foo of int] mallocd) = free_ x
+                                              ^
+Error: Type "[ `Foo of int ]" does not have an unboxed version, try free_stack_
+|}]
+
+let f (x : [`Foo of int | `Bar of int * int] mallocd) = free_ x 
+[%%expect{|
+Line 1, characters 62-63:
+1 | let f (x : [`Foo of int | `Bar of int * int] mallocd) = free_ x
+                                                                  ^
+Error: Type "[ `Bar of int * int | `Foo of int ]" does not have an unboxed version, try free_stack_
+|}]
+
+type t = [`Foo of int]
+let f (x : t mallocd) = free_ x 
+[%%expect{|
+type t = [ `Foo of int ]
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+type t = [`Foo of int | `Bar of int * int]
+let f (x : t mallocd) = free_ x 
+[%%expect{|
+type t = [ `Bar of int * int | `Foo of int ]
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+(* Other types one cannot free *)
+let f (x : (int -> int) mallocd) = free_ x
+[%%expect{|
+Line 1, characters 41-42:
+1 | let f (x : (int -> int) mallocd) = free_ x
+                                             ^
+Error: Cannot free values of type "int -> int"
+|}]
+
+let f (x : <get : int; set : int> mallocd) = free_ x
+[%%expect{|
+Line 1, characters 51-52:
+1 | let f (x : <get : int; set : int> mallocd) = free_ x
+                                                       ^
+Error: Cannot free values of type "< get : int; set : int >"
+|}]
+
+type t
+let f (x : t mallocd) = free_ x
+[%%expect{|
+type t
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+let f (x : int mallocd) =
+  free_ x
+[%%expect {|
+Line 2, characters 8-9:
+2 |   free_ x
+            ^
+Error: Type "int" does not have an unboxed version, try free_stack_
 |}]
 
 let f (t : (int -> int) mallocd) = free_ t
@@ -202,236 +351,4 @@ Line 1, characters 57-58:
 1 | let f (t : [`Foo of int | `Bar of char] mallocd) = free_ t
                                                              ^
 Error: Type "[ `Bar of char | `Foo of int ]" does not have an unboxed version, try free_stack_
-|}]
-
-
-
-(* STACK FREE*)
-
-let generic_free_stack (x : 'a mallocd) = exclave_ (free_stack_ x)
-[%%expect {|
-Line 1, characters 64-65:
-1 | let generic_free_stack (x : 'a mallocd) = exclave_ (free_stack_ x)
-                                                                    ^
-Error: Cannot free values of type "'a"
-|}]
-
-let f x = exclave_ (free_stack_ x)
-[%%expect {|
-Line 1, characters 32-33:
-1 | let f x = exclave_ (free_stack_ x)
-                                    ^
-Error: Cannot free values of type "'a"
-|}]
-
-let f x @ global = free_stack_ x
-[%%expect {|
-Line 1, characters 31-32:
-1 | let f x @ global = free_stack_ x
-                                   ^
-Error: Cannot free values of type "'a"
-|}]
-
-let f (x @ external_) (y @ external_) =
-  exclave_ (free_stack_ (malloc_ (x,y)))
-[%%expect{|
-val f : 'a @ unique -> 'b @ unique -> local_ 'a * 'b = <fun>
-|}]
-
-let f (x : (int * int) mallocd) =
-  exclave_ (free_stack_ x)
-[%%expect {|
-val f : (int * int) mallocd @ unique -> local_ int * int = <fun>
-|}]
-
-let f (x : (int * int) mallocd @ aliased) =
-  free_stack_ x
-[%%expect {|
-Line 2, characters 14-15:
-2 |   free_stack_ x
-                  ^
-Error: This value is "aliased" but expected to be "unique".
-|}]
-
-
-let f (x : ('a * 'a) mallocd) (y : 'a) =
-  let (_,_) = free_stack_ x in
-  y + 1
-[%%expect {|
-val f : (int * int) mallocd @ unique -> int -> int = <fun>
-|}]
-
-let [@warning "-10"] f (x : 'a mallocd) (y : 'a) =
-  let (a,b) = y in
-  free_stack_ x;
-  a + b
-[%%expect {|
-val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
-|}]
-
-let f (x : 'a mallocd) (y : 'a) =
-  ignore (free_stack_ x);
-  let (a,b) = y in
-  a + b
-[%%expect {|
-Line 2, characters 22-23:
-2 |   ignore (free_stack_ x);
-                          ^
-Error: Cannot free values of type "'a"
-|}]
-
-let f (x : int) =
-  free_stack_ x
-[%%expect {|
-Line 2, characters 14-15:
-2 |   free_stack_ x
-                  ^
-Error: This expression has type "int" but an expression was expected of type
-         "'a mallocd"
-|}]
-
-(* CR jcutler: this is a terrible error message *)
-let f (x : int mallocd) =
-  free_stack_ x
-[%%expect {|
-Line 2, characters 14-15:
-2 |   free_stack_ x
-                  ^
-Error: Cannot free values of type "int"
-|}]
-
-(* CR jcutler: hmm... but we could free_ them... *)
-let f (x : int64 mallocd) =
-  free_stack_ x
-[%%expect {|
-Line 2, characters 14-15:
-2 |   free_stack_ x
-                  ^
-Error: Cannot free values of type "int64"
-|}]
-
-let f (x : ('a * 'a) mallocd) =
-  exclave_ (free_stack_ x)
-[%%expect{|
-val f : ('a * 'a) mallocd @ unique -> local_ 'a * 'a = <fun>
-|}]
-
-type t = {x : int; y : int}
-let f (t : t mallocd) = exclave_ (free_stack_ t)
-[%%expect {|
-type t = { x : int; y : int; }
-val f : t mallocd @ unique -> local_ t = <fun>
-|}]
-
-type 'a t = {x : 'a; y : 'a}
-let f (t : 'a t mallocd) = exclave_ (free_stack_ t)
-[%%expect {|
-type 'a t = { x : 'a; y : 'a; }
-val f : 'a t mallocd @ unique -> local_ 'a t = <fun>
-|}]
-
-type t = {mutable x : string; y : int}
-let f (t : t mallocd) = exclave_ (free_stack_ t)
-[%%expect {|
-type t = { mutable x : string; y : int; }
-val f : t mallocd @ unique -> local_ t = <fun>
-|}]
-
-type t = Foo of {z : char ; x : string; y : int}
-let f (t : t mallocd) = exclave_ (free_stack_ t)
-[%%expect {|
-type t = Foo of { z : char; x : string; y : int; }
-val f : t mallocd @ unique -> local_ t = <fun>
-|}]
-
-type t = Foo of {z : char ; x : string; y : int} | Bar of char * string
-let f (t : t mallocd) = exclave_ (free_stack_ t)
-[%%expect {|
-type t = Foo of { z : char; x : string; y : int; } | Bar of char * string
-val f : t mallocd @ unique -> local_ t = <fun>
-|}]
-
-
-module M : sig
-  type t = int * int
-end = struct
-  type t = int * int
-end
-
-let f (x : M.t mallocd) = exclave_ (free_stack_ x)
-[%%expect{|
-module M : sig type t = int * int end
-val f : M.t mallocd @ unique -> local_ M.t = <fun>
-|}]
-
-module M : sig
-  type t = {x : int; y: int}
-end = struct
-  type t = {x : int; y: int}
-end
-
-let f (x : M.t mallocd) = exclave_ (free_stack_ x)
-[%%expect{|
-module M : sig type t = { x : int; y : int; } end
-val f : M.t mallocd @ unique -> local_ M.t = <fun>
-|}]
-
-module M : sig
-  type t
-end = struct
-  type t = int * int
-end
-
-let f (x : M.t mallocd) = free_stack_ x
-[%%expect{|
-module M : sig type t end
-Line 7, characters 38-39:
-7 | let f (x : M.t mallocd) = free_stack_ x
-                                          ^
-Error: Cannot free values of type "M.t"
-|}]
-
-module M : sig
-  type t
-end = struct
-  type t = {x : int; y: int}
-end
-
-let f (x : M.t mallocd) = free_stack_ x
-[%%expect{|
-module M : sig type t end
-Line 7, characters 38-39:
-7 | let f (x : M.t mallocd) = free_stack_ x
-                                          ^
-Error: Cannot free values of type "M.t"
-|}]
-
-type t = Pack : 'a. 'a -> t
-let f (t : t mallocd) = exclave_ (free_stack_ t)
-[%%expect{|
-type t = Pack : 'a -> t
-val f : t mallocd @ unique -> local_ t = <fun>
-|}]
-
-let f (t : (int -> int) mallocd) = free_stack_ t
-[%%expect{|
-Line 1, characters 47-48:
-1 | let f (t : (int -> int) mallocd) = free_stack_ t
-                                                   ^
-Error: Cannot free values of type "int -> int"
-|}]
-
-let f (t : < get : int > mallocd) = free_stack_ t
-[%%expect{|
-Line 1, characters 48-49:
-1 | let f (t : < get : int > mallocd) = free_stack_ t
-                                                    ^
-Error: Cannot free values of type "< get : int >"
-|}]
-
-let f (t : [`Foo of int | `Bar of char] mallocd) = exclave_ (free_stack_ t)
-[%%expect{|
-val f :
-  [ `Bar of char | `Foo of int ] mallocd @ unique -> local_
-  [ `Bar of char | `Foo of int ] = <fun>
 |}]
