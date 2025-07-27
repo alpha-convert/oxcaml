@@ -43,7 +43,7 @@ val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 Line 3, characters 10-17:
 3 |   let _ = free_ x in
               ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type 'a * 'b, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b, which is not principal.
 
 val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 |}]
@@ -69,7 +69,7 @@ val f : ('a * 'b) mallocd @ unique -> #('a * 'b) = <fun>
 Line 1, characters 31-38:
 1 | let f (x : (_ * _) mallocd)  = free_ x
                                    ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type 'a * 'b, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b, which is not principal.
 
 val f : ('a * 'b) mallocd @ unique -> #('a * 'b) = <fun>
 |}]
@@ -81,7 +81,7 @@ val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 Line 1, characters 35-42:
 1 | let f (x : (_ * _ * _) mallocd)  = free_ x
                                        ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type 'a * 'b * 'c, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b * 'c, which is not principal.
 
 val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 |}]
@@ -96,7 +96,7 @@ type 'a t = 'a * 'a
 Line 2, characters 28-35:
 2 | let f (x : 'a t mallocd)  = free_ x
                                 ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type 'a t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a t, which is not principal.
 
 val f : 'a t mallocd @ unique -> #('a * 'a) = <fun>
 |}]
@@ -111,7 +111,7 @@ type 'a t = 'a * 'a * 'a
 Line 2, characters 35-42:
 2 | let f (x : (_ * _ * _) mallocd)  = free_ x
                                        ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type 'a * 'b * 'c, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b * 'c, which is not principal.
 
 val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 |}]
@@ -127,7 +127,7 @@ type t = { x : int; y : string @@ external_; }
 Line 2, characters 25-32:
 2 | let f (x : t mallocd)  = free_ x
                              ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> t# = <fun>
 |}]
@@ -142,7 +142,7 @@ type t = { x : int; y : string; }
 Line 2, characters 25-32:
 2 | let f (x : t mallocd)  = free_ x
                              ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> t# = <fun>
 |}]
@@ -157,7 +157,7 @@ type t = { mutable x : int; mutable y : string @@ external_; }
 Line 2, characters 25-32:
 2 | let f (x : t mallocd)  = free_ x
                              ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> t# = <fun>
 |}]
@@ -172,7 +172,7 @@ type t = { mutable x : int64#; mutable y : string @@ external_; }
 Line 2, characters 25-32:
 2 | let f (x : t mallocd)  = free_ x
                              ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> t# = <fun>
 |}]
@@ -187,7 +187,7 @@ type t = { mutable x : int64#; y : float#; }
 Line 2, characters 25-32:
 2 | let f (x : t mallocd)  = free_ x
                              ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> t# = <fun>
 |}]
@@ -202,7 +202,7 @@ val f : float mallocd @ unique -> float# = <fun>
 Line 1, characters 28-35:
 1 | let f (x : float mallocd) = free_ x
                                 ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type float, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type float, which is not principal.
 
 val f : float mallocd @ unique -> float# = <fun>
 |}]
@@ -214,7 +214,7 @@ val f : int64 mallocd @ unique -> int64# = <fun>
 Line 1, characters 28-35:
 1 | let f (x : int64 mallocd) = free_ x
                                 ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type int64, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type int64, which is not principal.
 
 val f : int64 mallocd @ unique -> int64# = <fun>
 |}]
@@ -226,7 +226,7 @@ val f : int32 mallocd @ unique -> int32# = <fun>
 Line 1, characters 28-35:
 1 | let f (x : int32 mallocd) = free_ x
                                 ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type int32, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type int32, which is not principal.
 
 val f : int32 mallocd @ unique -> int32# = <fun>
 |}]
@@ -241,7 +241,7 @@ type t = float
 Line 2, characters 24-31:
 2 | let f (x : t mallocd) = free_ x
                             ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> float# = <fun>
 |}]
@@ -256,7 +256,7 @@ type t = int64
 Line 2, characters 24-31:
 2 | let f (x : t mallocd) = free_ x
                             ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> int64# = <fun>
 |}]
@@ -271,7 +271,7 @@ type t = int32
 Line 2, characters 24-31:
 2 | let f (x : t mallocd) = free_ x
                             ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
 
 val f : t mallocd @ unique -> int32# = <fun>
 |}]
@@ -293,7 +293,7 @@ module M : sig type t = int * int end
 Line 7, characters 26-33:
 7 | let f (x : M.t mallocd) = free_ x
                               ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type M.t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type M.t, which is not principal.
 
 val f : M.t mallocd @ unique -> #(int * int) = <fun>
 |}]
@@ -313,7 +313,7 @@ module M : sig type t = { x : int; y : int; } end
 Line 7, characters 26-33:
 7 | let f (x : M.t mallocd) = free_ x
                               ^^^^^^^
-Warning 18 [not-principal]: typing this free_ eagerly pattern matches onthe type M.t, which is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type M.t, which is not principal.
 
 val f : M.t mallocd @ unique -> M.t# = <fun>
 |}]
