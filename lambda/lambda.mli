@@ -408,6 +408,8 @@ type primitive =
   | Ppoll
   (* Arch-specific pause. Without poll insertion, also acts as a [Ppoll]. *)
   | Pcpu_relax
+  (* CR jcutler: comment here *)
+  | Pcastmallocd
 
 (** This is the same as [Primitive.native_repr] but with [Repr_poly]
     compiled away. *)
