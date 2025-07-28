@@ -749,6 +749,9 @@ let rec comp_expr (exp : Lambda.lambda) : Blambda.blambda =
     | Pmakelazyblock Lazy_tag ->
       pseudo_event (variadic (Makeblock { tag = Config.lazy_tag }))
     | Pmakelazyblock Forward_tag ->
-      pseudo_event (variadic (Makeblock { tag = Obj.forward_tag })))
+      pseudo_event (variadic (Makeblock { tag = Obj.forward_tag }))
+    | Pcastmallocd ->
+      Misc.fatal_errorf "Blambda_of_lambda: %a is not supported in bytecode"
+        Printlambda.primitive primitive)
 
 let blambda_of_lambda x = comp_expr x

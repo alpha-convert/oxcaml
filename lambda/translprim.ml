@@ -157,6 +157,7 @@ type prim =
     (* For [Peek] and [Poke] the [option] is [None] until the primitive
        specialization code (below) has been run. *)
   | Unsupported of Lambda.primitive
+  | Lambda of Lambda.lfunction
 
 let units_with_used_primitives = Hashtbl.create 7
 let add_used_primitive loc env path =
@@ -518,6 +519,44 @@ let array_vec_primitives =
   |> List.to_seq
   |> String.Map.of_seq
 
+let use_mallocd_prim () =
+  let x_param = Ident.create_local "__use_mallocd_x" in
+  let f_param = Ident.create_local "__use_mallocd_f" in
+  let params = [
+    { name = x_param; debug_uid = Lambda.debug_uid_none;
+      layout = Punboxed_int Unboxed_nativeint;
+      attributes = Lambda.default_param_attribute; mode = Lambda.alloc_heap };
+    { name = f_param; debug_uid = Lambda.debug_uid_none;
+      layout = Pvalue generic_value;
+      attributes = Lambda.default_param_attribute; mode = Lambda.alloc_heap }
+  ] in
+  let result_layout = [ Pvalue generic_value; Punboxed_int Unboxed_nativeint] in
+  let cast_x = Lprim (Pcastmallocd , [Lvar x_param], Loc_unknown) in
+  let f_result = Lapply {
+    ap_func = Lvar f_param;
+    ap_args = [cast_x];
+    ap_result_layout = Pvalue generic_value;
+    ap_region_close = Rc_normal;
+    ap_mode = Lambda.alloc_heap;
+    ap_loc = Loc_unknown;
+    ap_tailcall = Default_tailcall;
+    ap_inlined = Default_inlined;
+    ap_specialised = Default_specialise;
+    ap_probe = None
+  } in
+  let body =
+    Lprim
+      (Pmake_unboxed_product result_layout, [f_result; Lvar x_param], Loc_unknown)
+  in
+  Lambda (lfunction' ~kind:(Curried {nlocal=0}) ~return:(Punboxed_product result_layout)
+  ~loc:Loc_unknown ~attr:Lambda.default_function_attribute
+  ~mode:Lambda.alloc_heap ~ret_mode:Lambda.alloc_heap ~params
+  ~body)
+(*
+let use_mallocd f x = f (cast x)
+*)
+
+
 let lookup_primitive loc ~poly_mode ~poly_sort pos p =
   let runtime5 = Config.runtime5 in
   let mode = to_alloc_mode ~poly:poly_mode p.prim_native_repr_res in
@@ -578,6 +617,7 @@ let lookup_primitive loc ~poly_mode ~poly_sort pos p =
        let mode = get_first_arg_mode () in
        Primitive ((Psetfield(1, Pointer, Assignment mode)), 2);
     | "%makeblock" -> Primitive ((Pmakeblock(0, Immutable, None, mode)), 1)
+    | "%use_mallocd" -> use_mallocd_prim ()
     | "%makemutable" -> Primitive ((Pmakeblock(0, Mutable, None, mode)), 1)
     | "%raise" -> Raise Raise_regular
     | "%reraise" -> Raise Raise_reraise
@@ -1757,6 +1797,19 @@ let remove_exception_ident id =
 
 let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
+  | Lambda lf, args -> Lapply
+    {
+      ap_func = (Lfunction lf);
+      ap_args = args;
+      ap_result_layout = lf.return;
+      ap_tailcall = Default_tailcall;
+      ap_inlined = Default_inlined;
+      ap_specialised = Default_specialise;
+      ap_probe = None;
+      ap_region_close = Rc_normal;
+      ap_mode = alloc_heap;
+      ap_loc = loc;
+    }
   | Primitive (prim, arity), args when arity = List.length args ->
       Lprim(prim, args, loc)
   | Sys_argv, [] ->
@@ -1882,6 +1935,7 @@ let check_primitive_arity loc p =
   in
   let ok =
     match prim with
+    | Lambda lfun -> List.length lfun.params = p.prim_arity
     | Primitive (_,arity) -> arity = p.prim_arity
     | External _ -> true
     | Sys_argv -> p.prim_arity = 0
@@ -2095,10 +2149,12 @@ let lambda_primitive_needs_event_after = function
   (* These don't allocate in bytecode; they're just identity functions: *)
   | Pbox_float (_, _) | Pbox_int _ | Pbox_vector (_, _)
   | Punbox_unit
+  | Pcastmallocd (* CR jcutler: probably not?*)
     -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
 let primitive_needs_event_after = function
+  | Lambda _ -> true
   | Primitive (prim,_) -> lambda_primitive_needs_event_after prim
   | External _ | Sys_argv -> true
   | Comparison(comp, knd) ->

@@ -410,6 +410,8 @@ type primitive =
   (* Poll for runtime actions *)
   | Ppoll
   | Pcpu_relax
+  (* CR jcutler: comment here *)
+  | Pcastmallocd
 
 and extern_repr =
   | Same_as_ocaml_repr of Jkind.Sort.Const.t
@@ -2158,6 +2160,8 @@ let primitive_may_allocate : primitive -> allocation_mode option = function
          at a level where these primitives are necessary is very likely going
          to be native. *)
       Some alloc_heap
+  (* CR jcutler: not sure, think about it later*)
+  | Pcastmallocd -> None
 
 let primitive_can_raise prim =
   match prim with
@@ -2319,7 +2323,8 @@ let primitive_can_raise prim =
   | Pdls_get | Ppoll | Pcpu_relax
   | Preinterpret_tagged_int63_as_unboxed_int64
   | Preinterpret_unboxed_int64_as_tagged_int63
-  | Parray_element_size_in_bytes _ | Ppeek _ | Ppoke _ ->
+  | Parray_element_size_in_bytes _ | Ppeek _ | Ppoke _
+  | Pcastmallocd ->
     false
 
 let constant_layout: constant -> layout = function
@@ -2602,6 +2607,7 @@ let primitive_result_layout (p : primitive) =
       | Ppp_unboxed_nativeint -> layout_unboxed_nativeint
     )
   | Ppoke _ -> layout_unit
+  | Pcastmallocd -> layout_any_value
 
 let compute_expr_layout free_vars_kind lam =
   let rec compute_expr_layout kinds = function
