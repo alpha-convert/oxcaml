@@ -7165,7 +7165,7 @@ and type_expect_
       | Pexp_override _ | Pexp_letmodule (_, _, _) | Pexp_letexception (_, _)
       | Pexp_assert _ | Pexp_poly (_, _) | Pexp_newtype (_, _, _)
       | Pexp_open (_, _)| Pexp_letop _  |Pexp_extension _ | Pexp_stack _
-      | Pexp_malloc _ | Pexp_overwrite (_, _)) -> not_alloc ());
+      | Pexp_malloc _ | Pexp_overwrite (_, _) | Pexp_free(_,_)) -> not_alloc ());
       let inner_ty =
         newvar (Jkind.Builtin.value_or_null ~why:(Type_argument
           { parent_path = Predef.path_mallocd ; position = 1; arity = 1}))
@@ -7208,7 +7208,7 @@ and type_expect_
       | Texp_object (_, _) | Texp_pack _ | Texp_letop _
       | Texp_extension_constructor (_, _) | Texp_open (_, _)
       | Texp_probe _ | Texp_probe_is_enabled _ | Texp_exclave _
-      | Texp_overwrite (_, _) | Texp_hole _ ->
+      | Texp_overwrite (_, _) | Texp_hole _ | Texp_free (_,_) ->
           Misc.fatal_error
               "Parsetree for externally-allocable \
                term elaborated to Typedtree corresponding to something else"
