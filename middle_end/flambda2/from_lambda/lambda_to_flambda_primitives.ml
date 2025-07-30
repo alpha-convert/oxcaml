@@ -1655,8 +1655,6 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
   | Pobj_magic layout, [arg] -> opaque layout arg ~middle_end_only:true
   | Preinterpret_word_as_value, [[arg]] ->
     [Unary (Reinterpret_word_as_value, arg)]
-  (* CR jcutler: error *)
-  | Preinterpret_word_as_value, _ -> Misc.fatal_error ""
   | Pduprecord (repr, num_fields), [[arg]] ->
     let kind : P.Duplicate_block_kind.t =
       match repr with
@@ -2737,7 +2735,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
       | Punbox_int _ | Pbox_int _ | Punbox_unit | Punboxed_product_field _
       | Pget_header _ | Pufloatfield _ | Pmixedfield _
       | Preinterpret_unboxed_int64_as_tagged_int63
-      | Preinterpret_tagged_int63_as_unboxed_int64
+      | Preinterpret_tagged_int63_as_unboxed_int64 | Preinterpret_word_as_value
       | Parray_element_size_in_bytes _ | Ppeek _ | Pmakelazyblock _ ),
       ([] | _ :: _ :: _ | [([] | _ :: _ :: _)]) ) ->
     Misc.fatal_errorf
