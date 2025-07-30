@@ -1301,7 +1301,8 @@ let compare_unary_primitive p1 p2 =
       | Bigarray_length _ | Unbox_number _ | Box_number _ | Untag_immediate
       | Tag_immediate | Project_function_slot _ | Project_value_slot _
       | Is_boxed_float | Is_flat_float_array | End_region _ | End_try_region _
-      | Obj_dup | Get_header | Peek _ | Make_lazy _ | Reinterpret_word_as_value ),
+      | Obj_dup | Get_header | Peek _ | Make_lazy _ | Reinterpret_word_as_value
+        ),
       _ ) ->
     Stdlib.compare (unary_primitive_numbering p1) (unary_primitive_numbering p2)
 
@@ -1370,7 +1371,8 @@ let print_unary_primitive ppf p =
       Flambda_kind.Standard_int_or_float.print_lowercase kind
   | Make_lazy lazy_tag ->
     fprintf ppf "@[<hov 1>(Make_lazy@ %a)@]" Lazy_block_tag.print lazy_tag
-  | Reinterpret_word_as_value -> Format.pp_print_string ppf "Reinterpret_word_as_value"
+  | Reinterpret_word_as_value ->
+    Format.pp_print_string ppf "Reinterpret_word_as_value"
 
 let arg_kind_of_unary_primitive p =
   match p with
