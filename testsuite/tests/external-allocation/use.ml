@@ -5,13 +5,8 @@
 
 module Int64_u = Stdlib_upstream_compatible.Int64_u
 
-module Aliased : sig
-  type 'a t = {aliased : 'a @@ aliased} [@@unboxed]
-end = struct
-  type 'a t = {aliased : 'a @@ aliased} [@@unboxed]
-end
+external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b @ unique) @ local once -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 
-external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b) @ local once -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
 
 let print_and_add x y =
   print_endline (Int.to_string x);
@@ -22,7 +17,7 @@ let print_and_add x y =
 (* You can use malloc'd items of all the different mallocable types *)
 let [@inline never] f (m : (int * int) mallocd) =
   let #(r,_) = use m @@ fun (x,y) -> print_and_add x y in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -33,7 +28,7 @@ let () =
 type t1 = {x : int; y : int}
 let f (m : t1 mallocd) =
   let #(r,_) = use m @@ fun {x;y} -> print_and_add x y in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -44,7 +39,7 @@ let () =
 type t2 = Foo of {x : int; y : int}
 let f (m : t2 mallocd) =
   let #(r,_) = use m @@ fun (Foo {x;y}) -> print_and_add x y in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -55,7 +50,7 @@ let () =
 type t3 = Foo of int
 let f (m : t3 mallocd) =
   let #(r,_) = use m @@ fun (Foo x) -> print_and_add x x in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -66,7 +61,7 @@ let () =
 type t4 = Foo of int * int
 let f (m : t4 mallocd) =
   let #(r,_) = use m @@ fun (Foo (x,y)) -> print_and_add x y in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -81,7 +76,7 @@ let f (m : t5 mallocd) =
     | Foo(x,y) -> print_and_add x y
     | Bar x -> print_and_add x x
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -98,7 +93,7 @@ let f (m : t6 mallocd) =
     | FooRec {a; b} -> print_and_add a b
     | BarRec {x; y} -> print_and_add x y
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -115,7 +110,7 @@ let f (m : t7 mallocd) =
     | FooRec2 {a; b} -> print_and_add a b
     | BarTuple (x, y) -> print_and_add x y
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -133,7 +128,7 @@ let f (m : t8 mallocd) =
     | FooRec3 {a; b} -> print_and_add a b
     | BarInt x -> print_and_add x x
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -148,7 +143,7 @@ let f (m : t9 mallocd) =
   let #(r,_) = use m @@ fun {x;y} ->
     print_and_add (Int64_u.to_int x) (Int64_u.to_int y);
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -161,7 +156,7 @@ let f (m : t10 mallocd) =
   let #(r,_) = use m @@ fun {x;y} ->
     print_and_add x (Int64_u.to_int y);
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -180,7 +175,7 @@ let f (m : t11 mallocd) =
   let #(r,_) = use m @@ fun {x;y} ->
     print_and_add x y;
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -199,7 +194,7 @@ let f (m : t12 mallocd) =
   let #(r,_) = use m @@ fun {x;y} ->
     print_and_add x (Int64_u.to_int y);
   in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -209,7 +204,7 @@ let () =
 
 let f (m : [`Foo of int] mallocd) =
   let #(r,_) = use m @@ fun (`Foo x) -> print_and_add x x in
-  print_endline (Int.to_string r.aliased);
+  print_endline (Int.to_string r);
   ()
 
 let () =
@@ -226,10 +221,10 @@ let nested_tuples (m1 : (int * int) mallocd) (m2 : (int * int) mallocd) =
     let #(r2, _) = use m2 @@ fun (c, d) ->
       print_and_add (a + c) (b + d)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     a * b
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -243,10 +238,10 @@ let nested_records (m1 : t1 mallocd) (m2 : t1 mallocd) =
     let #(r2, _) = use m2 @@ fun {x = x2; y = y2} ->
       print_and_add (x1 + x2) (y1 + y2)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     x1 * y1
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -260,10 +255,10 @@ let nested_constructors (m1 : t3 mallocd) (m2 : t3 mallocd) =
     let #(r2, _) = use m2 @@ fun (Foo x2) ->
       print_and_add x1 x2
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     x1 * 2
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -277,10 +272,10 @@ let nested_tuple_record (m1 : (int * int) mallocd) (m2 : t1 mallocd) =
     let #(r2, _) = use m2 @@ fun {x; y} ->
       print_and_add (a + x) (b + y)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     a + b
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -294,10 +289,10 @@ let nested_record_constructor (m1 : t1 mallocd) (m2 : t2 mallocd) =
     let #(r2, _) = use m2 @@ fun (Foo {x = x2; y = y2}) ->
       print_and_add (x + x2) (y + y2)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     x * y
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -311,10 +306,10 @@ let nested_constructor_tuple (m1 : t4 mallocd) (m2 : (int * int) mallocd) =
     let #(r2, _) = use m2 @@ fun (x2, y2) ->
       print_and_add (x1 + x2) (y1 + y2)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     x1 * y1
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -334,7 +329,7 @@ let nested_mutable_records (m1 : t11 mallocd) (m2 : t11 mallocd) =
       r2.y <- r2.y * 3;
       print_and_add initial_sum inner_sum
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     (* Use the mutated m2 again *)
     let #(_ , _) = use m2' @@ fun r2_mutated ->
       print_endline ("Final m2 state : " ^ Int.to_string r2_mutated.x ^ ", " ^ Int.to_string r2_mutated.y)
@@ -358,10 +353,10 @@ let nested_mixed_records (m1 : t10 mallocd) (m2 : t9 mallocd) =
     let #(r2, _) = use m2 @@ fun {x = x2; y = y2} ->
       print_and_add x (Int64_u.to_int y + Int64_u.to_int x2 + Int64_u.to_int y2)
     in
-    print_endline (Int.to_string r2.aliased);
+    print_endline (Int.to_string r2);
     x + Int64_u.to_int y
   in
-  print_endline (Int.to_string r1.aliased);
+  print_endline (Int.to_string r1);
   ()
 
 let () =
@@ -380,7 +375,7 @@ let f (m : t11 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+  print_endline ("Result 1: " ^ Int.to_string r1);
 
   print_endline "Second use:";
   let #(r2, _) = use m @@ fun r ->
@@ -389,7 +384,7 @@ let f (m : t11 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+  print_endline ("Result 2: " ^ Int.to_string r2);
   ()
 
 let () =
@@ -406,7 +401,7 @@ let f (m : t11 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+  print_endline ("Result 1: " ^ Int.to_string r1);
 
   print_endline "Second use:";
   let #(r2, m) = use m @@ fun r ->
@@ -415,7 +410,7 @@ let f (m : t11 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+  print_endline ("Result 2: " ^ Int.to_string r2);
 
   print_endline "Third use:";
   let #(r3, _) = use m @@ fun r ->
@@ -424,7 +419,7 @@ let f (m : t11 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("Result 3: " ^ Int.to_string r3.aliased);
+  print_endline ("Result 3: " ^ Int.to_string r3);
   ()
 
 let () =
@@ -443,7 +438,7 @@ let f (m : t13 mallocd) =
     r.b <- r.b + 1;
     r.a + r.b
   in
-  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+  print_endline ("Result 1: " ^ Int.to_string r1);
 
   print_endline "Second use:";
   let #(r2, m) = use m @@ fun (MutRec r) ->
@@ -452,7 +447,7 @@ let f (m : t13 mallocd) =
     r.b <- r.b + 1;
     r.a + r.b
   in
-  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+  print_endline ("Result 2: " ^ Int.to_string r2);
 
   print_endline "Third use:";
   let #(r3, _) = use m @@ fun (MutRec r) ->
@@ -461,7 +456,7 @@ let f (m : t13 mallocd) =
     r.b <- r.b + 1;
     r.a + r.b
   in
-  print_endline ("Result 3: " ^ Int.to_string r3.aliased);
+  print_endline ("Result 3: " ^ Int.to_string r3);
   ()
 
 let () =
@@ -478,7 +473,7 @@ let f (m1 : t11 mallocd) (m2 : t12 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("t11 result 1: " ^ Int.to_string r1.aliased);
+  print_endline ("t11 result 1: " ^ Int.to_string r1);
 
   print_endline "Second record, first use:";
   let #(r2, m2) = use m2 @@ fun r ->
@@ -487,7 +482,7 @@ let f (m1 : t11 mallocd) (m2 : t12 mallocd) =
     r.y <- Int64_u.add r.y #1L;
     r.x + Int64_u.to_int r.y
   in
-  print_endline ("t12 result 1: " ^ Int.to_string r2.aliased);
+  print_endline ("t12 result 1: " ^ Int.to_string r2);
 
   print_endline "First record, second use:";
   let #(r3, _) = use m1 @@ fun r ->
@@ -496,7 +491,7 @@ let f (m1 : t11 mallocd) (m2 : t12 mallocd) =
     r.y <- r.y + 1;
     r.x + r.y
   in
-  print_endline ("t11 result 2: " ^ Int.to_string r3.aliased);
+  print_endline ("t11 result 2: " ^ Int.to_string r3);
 
   print_endline "Second record, second use:";
   let #(r4, _) = use m2 @@ fun r ->
@@ -505,7 +500,7 @@ let f (m1 : t11 mallocd) (m2 : t12 mallocd) =
     r.y <- Int64_u.add r.y #1L;
     r.x + Int64_u.to_int r.y
   in
-  print_endline ("t12 result 2: " ^ Int.to_string r4.aliased);
+  print_endline ("t12 result 2: " ^ Int.to_string r4);
   ()
 
 let () =
@@ -564,11 +559,3 @@ let () =
   print_endline "nested use with GCs:";
   f (malloc_ {x = 1; y = 2}) (malloc_ {x = 1; y = 2});
   print_endline "\n"
-
-
-
-(* @ uhique
-let _ =
-  iter ~f:(fun i -> print_endline (Int.to_string i)) (alloc_list [1;2;3;4;5;6])
-  (* use mutable, immutable, mixed, multiple things at thesame time (nested, sequential). *)
-  Get the GC to run in the middle of use and make sure it's all fine *)
