@@ -2145,7 +2145,7 @@ let lambda_primitive_needs_event_after = function
   (* These don't allocate in bytecode; they're just identity functions: *)
   | Pbox_float (_, _) | Pbox_int _ | Pbox_vector (_, _)
   | Punbox_unit
-  | Preinterpret_word_as_value (* CR jcutler: probably not?*)
+  | Preinterpret_word_as_value
     -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

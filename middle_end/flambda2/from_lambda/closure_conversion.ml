@@ -1094,7 +1094,6 @@ let close_primitive acc env ~let_bound_ids_with_kinds named
       | Preinterpret_tagged_int63_as_unboxed_int64
       | Preinterpret_unboxed_int64_as_tagged_int63 | Ppeek _ | Ppoke _
       | Pmakelazyblock _ | Preinterpret_word_as_value ->
-        (* CR jcutler: unclear if this is correct. *)
         (* Inconsistent with outer match *)
         assert false
     in
