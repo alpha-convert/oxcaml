@@ -651,7 +651,8 @@ let simplify_opaque_identity dacc ~kind ~original_term ~arg:_ ~arg_ty:_
     ~result_var =
   SPR.create_unknown dacc ~result_var kind ~original_term
 
-let simplify_cast_mallocd dacc ~original_term ~arg:_ ~arg_ty:_ ~result_var =
+let simplify_reinterpret_nativeint_as_value dacc ~original_term ~arg:_ ~arg_ty:_
+    ~result_var =
   SPR.create_unknown dacc ~result_var K.value ~original_term
 
 let simplify_end_region dacc ~original_term ~arg:_ ~arg_ty:_ ~result_var =
@@ -987,6 +988,6 @@ let simplify_unary_primitive dacc original_prim (prim : P.unary_primitive) ~arg
     | Get_header -> simplify_get_header ~original_prim
     | Peek _ -> simplify_peek ~original_prim
     | Make_lazy _ -> simplify_lazy ~original_prim
-    | Reinterpret_nativeint_as_value -> simplify_cast_mallocd
+    | Reinterpret_nativeint_as_value -> simplify_reinterpret_nativeint_as_value
   in
   simplifier dacc ~original_term ~arg ~arg_ty ~result_var
