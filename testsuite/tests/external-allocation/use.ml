@@ -7,12 +7,10 @@ module Int64_u = Stdlib_upstream_compatible.Int64_u
 
 external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b @ unique) @ local once -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 
-
 let print_and_add x y =
   print_endline (Int.to_string x);
   print_endline (Int.to_string y);
   x + y
-
 
 (* You can use malloc'd items of all the different mallocable types *)
 let [@inline never] f (m : (int * int) mallocd) =
