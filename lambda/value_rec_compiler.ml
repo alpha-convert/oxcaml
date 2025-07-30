@@ -359,7 +359,7 @@ let compute_static_size lam =
     | Pdls_get
     | Ppeek _
     | Ppoke _
-    | Pcastmallocd ->
+    | Preinterpret_word_as_value ->
         dynamic_size lam
 
     (* Primitives specific to oxcaml *)

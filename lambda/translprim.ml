@@ -531,7 +531,7 @@ let use_mallocd_prim () =
       attributes = Lambda.default_param_attribute; mode = Lambda.alloc_heap }
   ] in
   let result_layout = [ Pvalue generic_value; Punboxed_int Unboxed_nativeint] in
-  let cast_x = Lprim (Pcastmallocd , [Lvar x_param], Loc_unknown) in
+  let cast_x = Lprim (Preinterpret_word_as_value , [Lvar x_param], Loc_unknown) in
   let f_result = Lapply {
     ap_func = Lvar f_param;
     ap_args = [cast_x];
@@ -2149,7 +2149,7 @@ let lambda_primitive_needs_event_after = function
   (* These don't allocate in bytecode; they're just identity functions: *)
   | Pbox_float (_, _) | Pbox_int _ | Pbox_vector (_, _)
   | Punbox_unit
-  | Pcastmallocd (* CR jcutler: probably not?*)
+  | Preinterpret_word_as_value (* CR jcutler: probably not?*)
     -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)
