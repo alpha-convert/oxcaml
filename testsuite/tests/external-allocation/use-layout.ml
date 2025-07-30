@@ -2,35 +2,31 @@
   expect;
 *)
 
-module Aliased = struct
-  type 'a t = {aliased : 'a @@ aliased} [@@unboxed]
-end
 (* Use can be given the most precise type *)
-external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b) -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
+external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b @ unique) @ local once -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 [%%expect{|
-module Aliased : sig type 'a t = { aliased : 'a @@ aliased; } [@@unboxed] end
 external use :
   'a mallocd @ local unique ->
-  ('a @ local external_ -> 'b) -> #('b Aliased.t * 'a mallocd) @ unique
-  = "%use_mallocd"
+  ('a @ local external_ -> 'b @ unique) @ local once ->
+  #('b * 'a mallocd) @ unique = "%use_mallocd"
 |}]
 
 (* First argument must be of layout word *)
-external use : int64# -> int -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
+external use : int64# -> int -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 [%%expect{|
-Line 1, characters 15-69:
-1 | external use : int64# -> int -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 1, characters 15-59:
+1 | external use : int64# -> int -> #('b * 'a mallocd) @ unique = "%use_mallocd"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The primitive [%use_mallocd] is used in an invalid declaration.
        The declaration contains argument/return types with the wrong layout.
 |}]
 
 (* Second must be of layout value *)
-external use : int -> int64# -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
+external use : int -> int64# -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 [%%expect{|
-Line 1, characters 15-69:
-1 | external use : int -> int64# -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Line 1, characters 15-59:
+1 | external use : int -> int64# -> #('b * 'a mallocd) @ unique = "%use_mallocd"
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Error: The primitive [%use_mallocd] is used in an invalid declaration.
        The declaration contains argument/return types with the wrong layout.
 |}]
