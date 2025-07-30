@@ -552,10 +552,6 @@ let use_mallocd_prim () =
   ~loc:Loc_unknown ~attr:Lambda.default_function_attribute
   ~mode:Lambda.alloc_heap ~ret_mode:Lambda.alloc_heap ~params
   ~body)
-(*
-let use_mallocd f x = f (cast x)
-*)
-
 
 let lookup_primitive loc ~poly_mode ~poly_sort pos p =
   let runtime5 = Config.runtime5 in
