@@ -381,7 +381,7 @@ let unary_prim_size prim =
   | Get_header -> 2
   | Peek _ -> 1
   | Make_lazy _ -> alloc_size + 1
-  | Reinterpret_word_as_value -> 0
+  | Reinterpret_nativeint_as_value -> 0
 
 let binary_prim_size prim =
   match (prim : Flambda_primitive.binary_primitive) with
