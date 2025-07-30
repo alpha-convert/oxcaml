@@ -1,6 +1,10 @@
 (* TEST
+ include stdlib_upstream_compatible;
   native;
 *)
+
+module Int64_u = Stdlib_upstream_compatible.Int64_u
+
 module Aliased : sig
   type 'a t = {aliased : 'a @@ aliased} [@@unboxed]
 end = struct
@@ -47,6 +51,74 @@ let f (m : t1 mallocd) =
 let () =
   print_endline "constructor with record field:";
   f (malloc_ (Foo {x = 2;y = 3}));
+  print_endline "\n"
+
+type t2 = Foo of int
+let f (m : t2 mallocd) =
+  let #(r,_) = use m @@ fun (Foo x) -> print_and_add x x in
+  print_endline (Int.to_string r.aliased);
+  ()
+
+let () =
+  print_endline "constructor with int field:";
+  f (malloc_ (Foo 2));
+  print_endline "\n"
+
+type t3 = Foo of int * int
+let f (m : t3 mallocd) =
+  let #(r,_) = use m @@ fun (Foo (x,y)) -> print_and_add x y in
+  print_endline (Int.to_string r.aliased);
+  ()
+
+let () =
+  print_endline "constructor with tuple field:";
+  f (malloc_ (Foo (2,3)));
+  print_endline "\n"
+
+
+type t4 = {x : int64#; y : int64#;}
+let f (m : t4 mallocd) =
+  let #(r,_) = use m @@ fun {x;y} ->
+    print_and_add (Int64_u.to_int x) (Int64_u.to_int y);
+  in
+  print_endline (Int.to_string r.aliased);
+  ()
+
+let () =
+  print_endline "record with unboxed fields:";
+  f (malloc_ ({x = #2L;y = #3L}));
+  print_endline "\n"
+
+type t5 = {x : int; y : int64#;}
+let f (m : t5 mallocd) =
+  let #(r,_) = use m @@ fun {x;y} ->
+    print_and_add x (Int64_u.to_int y);
+  in
+  print_endline (Int.to_string r.aliased);
+  ()
+
+let () =
+  print_endline "mixed record:";
+  f (malloc_ ({x = 2;y = #3L}));
+  print_endline "\n"
+
+type t6 = {mutable x : int; mutable y : int}
+let f (m : t6 mallocd) =
+  let #(r,m) = use m @@ fun r ->
+    ignore (print_and_add r.x r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    ()
+  in
+  let #(r,_) = use m @@ fun {x;y} ->
+    print_and_add x y;
+  in
+  print_endline (Int.to_string r.aliased);
+  ()
+
+let () =
+  print_endline "record with mutable fields, used twice:";
+  f (malloc_ ({x = 2;y = 3}));
   print_endline "\n"
 
 
