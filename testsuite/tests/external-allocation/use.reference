@@ -28,6 +28,46 @@ constructor with tuple field:
 5
 
 
+type with two constructors
+2
+3
+5
+and
+3
+3
+6
+
+
+two constructors both with record arguments
+2
+3
+5
+and
+4
+5
+9
+
+
+constructor with record vs tuple
+2
+3
+5
+and
+4
+5
+9
+
+
+constructor with record vs int
+2
+3
+5
+and
+4
+4
+8
+
+
 record with unboxed fields:
 2
 3
@@ -48,6 +88,80 @@ record with mutable fields, used twice:
 7
 
 
+mixed record with mutable fields, used twice:
+2
+3
+3
+4
+7
+
+
+polymorphic variant:
+2
+2
+4
+
+
 5
 7
 6
+nested tuples:
+6
+8
+14
+6
+
+
+nested records:
+6
+8
+14
+6
+
+
+nested constructors:
+3
+7
+10
+6
+
+
+nested tuple and record:
+6
+8
+14
+5
+
+
+nested record and constructor:
+8
+10
+18
+12
+
+
+nested constructor and tuple:
+6
+8
+14
+6
+
+
+nested mutable records with mutations:
+3
+7
+10
+After mutation: 6, 12
+18
+33
+Final m1 state: 11, 22
+242
+
+
+nested mixed records:
+5
+45
+50
+15
+
+
