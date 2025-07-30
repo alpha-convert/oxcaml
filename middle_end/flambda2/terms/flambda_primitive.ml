@@ -1134,7 +1134,7 @@ type unary_primitive =
   | Get_header
   | Peek of Flambda_kind.Standard_int_or_float.t
   | Make_lazy of Lazy_block_tag.t
-  | Reinterpret_word_as_value
+  | Reinterpret_nativeint_as_value
 
 (* Here and below, operations that are genuine projections shouldn't be eligible
    for CSE, since we deal with projections through types. *)
@@ -1173,7 +1173,7 @@ let unary_primitive_eligible_for_cse p ~arg =
   | Project_function_slot _ | Project_value_slot _ -> false
   | Is_boxed_float | Is_flat_float_array -> true
   | End_region _ | End_try_region _ | Obj_dup | Peek _ | Make_lazy _
-  | Reinterpret_word_as_value ->
+  | Reinterpret_nativeint_as_value ->
     false
 
 let compare_unary_primitive p1 p2 =
@@ -1209,7 +1209,7 @@ let compare_unary_primitive p1 p2 =
     | Is_null -> 27
     | Peek _ -> 28
     | Make_lazy _ -> 29
-    | Reinterpret_word_as_value -> 30
+    | Reinterpret_nativeint_as_value -> 30
   in
   match p1, p2 with
   | ( Block_load { kind = kind1; mut = mut1; field = field1 },
@@ -1301,7 +1301,7 @@ let compare_unary_primitive p1 p2 =
       | Bigarray_length _ | Unbox_number _ | Box_number _ | Untag_immediate
       | Tag_immediate | Project_function_slot _ | Project_value_slot _
       | Is_boxed_float | Is_flat_float_array | End_region _ | End_try_region _
-      | Obj_dup | Get_header | Peek _ | Make_lazy _ | Reinterpret_word_as_value
+      | Obj_dup | Get_header | Peek _ | Make_lazy _ | Reinterpret_nativeint_as_value
         ),
       _ ) ->
     Stdlib.compare (unary_primitive_numbering p1) (unary_primitive_numbering p2)
@@ -1371,8 +1371,8 @@ let print_unary_primitive ppf p =
       Flambda_kind.Standard_int_or_float.print_lowercase kind
   | Make_lazy lazy_tag ->
     fprintf ppf "@[<hov 1>(Make_lazy@ %a)@]" Lazy_block_tag.print lazy_tag
-  | Reinterpret_word_as_value ->
-    Format.pp_print_string ppf "Reinterpret_word_as_value"
+  | Reinterpret_nativeint_as_value ->
+    Format.pp_print_string ppf "Reinterpret_nativeint_as_value"
 
 let arg_kind_of_unary_primitive p =
   match p with
@@ -1408,7 +1408,7 @@ let arg_kind_of_unary_primitive p =
   | Get_header -> K.value
   | Peek _ -> K.naked_nativeint
   | Make_lazy _ -> K.value
-  | Reinterpret_word_as_value -> K.naked_nativeint
+  | Reinterpret_nativeint_as_value -> K.naked_nativeint
 
 let result_kind_of_unary_primitive p : result_kind =
   match p with
@@ -1447,7 +1447,7 @@ let result_kind_of_unary_primitive p : result_kind =
   | Get_header -> Singleton K.naked_nativeint
   | Peek kind -> Singleton (K.Standard_int_or_float.to_kind kind)
   | Make_lazy _ -> Singleton K.value
-  | Reinterpret_word_as_value -> Singleton K.value
+  | Reinterpret_nativeint_as_value -> Singleton K.value
 
 let effects_and_coeffects_of_unary_primitive p : Effects_and_coeffects.t =
   match p with
@@ -1540,7 +1540,7 @@ let effects_and_coeffects_of_unary_primitive p : Effects_and_coeffects.t =
     (* For the moment, prevent [Peek] from being moved. *)
     Arbitrary_effects, Has_coeffects, Strict
   | Make_lazy _ -> Only_generative_effects Mutable, No_coeffects, Strict
-  | Reinterpret_word_as_value -> No_effects, No_coeffects, Strict
+  | Reinterpret_nativeint_as_value -> No_effects, No_coeffects, Strict
 
 let unary_classify_for_printing p =
   match p with
@@ -1558,7 +1558,7 @@ let unary_classify_for_printing p =
   | Get_header -> Neither
   | Peek _ -> Neither
   | Make_lazy _ -> Constructive
-  | Reinterpret_word_as_value -> Neither
+  | Reinterpret_nativeint_as_value -> Neither
 
 let free_names_unary_primitive p =
   match p with
@@ -1581,7 +1581,7 @@ let free_names_unary_primitive p =
   | Is_boxed_float | Is_flat_float_array | End_region _ | End_try_region _
   | Obj_dup | Get_header
   | Peek (_ : Flambda_kind.Standard_int_or_float.t)
-  | Make_lazy _ | Reinterpret_word_as_value ->
+  | Make_lazy _ | Reinterpret_nativeint_as_value ->
     Name_occurrences.empty
 
 let apply_renaming_unary_primitive p renaming =
@@ -1603,7 +1603,7 @@ let apply_renaming_unary_primitive p renaming =
   | Is_boxed_float | Is_flat_float_array | End_region _ | End_try_region _
   | Project_function_slot _ | Project_value_slot _ | Obj_dup | Get_header
   | Peek (_ : Flambda_kind.Standard_int_or_float.t)
-  | Make_lazy _ | Reinterpret_word_as_value ->
+  | Make_lazy _ | Reinterpret_nativeint_as_value ->
     p
 
 let ids_for_export_unary_primitive p =
@@ -1617,7 +1617,7 @@ let ids_for_export_unary_primitive p =
   | Is_boxed_float | Is_flat_float_array | End_region _ | End_try_region _
   | Project_function_slot _ | Project_value_slot _ | Obj_dup | Get_header
   | Peek (_ : Flambda_kind.Standard_int_or_float.t)
-  | Make_lazy _ | Reinterpret_word_as_value ->
+  | Make_lazy _ | Reinterpret_nativeint_as_value ->
     Ids_for_export.empty
 
 type binary_int_arith_op =

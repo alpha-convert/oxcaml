@@ -1654,7 +1654,7 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
   | Popaque layout, [arg] -> opaque layout arg ~middle_end_only:false
   | Pobj_magic layout, [arg] -> opaque layout arg ~middle_end_only:true
   | Preinterpret_word_as_value, [[arg]] ->
-    [Unary (Reinterpret_word_as_value, arg)]
+    [Unary (Reinterpret_nativeint_as_value, arg)]
   | Pduprecord (repr, num_fields), [[arg]] ->
     let kind : P.Duplicate_block_kind.t =
       match repr with

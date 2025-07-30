@@ -462,7 +462,7 @@ type unary_primitive =
           opaque to the compiler. *)
   | Peek of Flambda_kind.Standard_int_or_float.t
   | Make_lazy of Lazy_block_tag.t
-  | Reinterpret_word_as_value
+  | Reinterpret_nativeint_as_value
 
 (** Whether a comparison is to yield a boolean result, as given by a particular
     comparison operator, or whether it is to behave in the manner of "compare"
