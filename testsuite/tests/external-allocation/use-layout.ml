@@ -21,7 +21,6 @@ Error: The primitive [%use_mallocd] is used in an invalid declaration.
        The declaration contains argument/return types with the wrong layout.
 |}]
 
-(* Second must be of layout value *)
 external use : int -> int64# -> #('b * 'a mallocd) @ unique = "%use_mallocd"
 [%%expect{|
 Line 1, characters 15-59:
