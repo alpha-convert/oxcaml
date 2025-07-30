@@ -10,6 +10,44 @@ record:
 5
 
 
+constructor with record field:
+2
+3
+5
+
+
+constructor with int field:
+2
+2
+4
+
+
+constructor with tuple field:
+2
+3
+5
+
+
+record with unboxed fields:
+2
+3
+5
+
+
+mixed record:
+2
+3
+5
+
+
+record with mutable fields, used twice:
+2
+3
+3
+4
+7
+
+
 5
 7
 6
