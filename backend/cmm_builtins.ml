@@ -63,7 +63,6 @@ let if_expr_supported expr =
 
 let int_of_value arg dbg = Cop (Creinterpret_cast Int_of_value, [arg], dbg)
 
-(* CR jcutler: right here! *)
 let value_of_int arg dbg = Cop (Creinterpret_cast Value_of_int, [arg], dbg)
 
 let shift32 make_op arg count dbg =

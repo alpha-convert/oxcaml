@@ -1653,9 +1653,9 @@ let convert_lprim ~big_endian (prim : L.primitive) (args : Simple.t list list)
        Parrayblit should have been expanded in [Lambda_to_lambda_transforms]"
   | Popaque layout, [arg] -> opaque layout arg ~middle_end_only:false
   | Pobj_magic layout, [arg] -> opaque layout arg ~middle_end_only:true
-  | Pcastmallocd, [[arg]] -> [Unary (Cast_mallocd, arg)]
+  | Preinterpret_word_as_value, [[arg]] -> [Unary (Reinterpret_word_as_value, arg)]
   (* CR jcutler: error *)
-  | Pcastmallocd, _ -> Misc.fatal_error ""
+  | Preinterpret_word_as_value, _ -> Misc.fatal_error ""
   | Pduprecord (repr, num_fields), [[arg]] ->
     let kind : P.Duplicate_block_kind.t =
       match repr with

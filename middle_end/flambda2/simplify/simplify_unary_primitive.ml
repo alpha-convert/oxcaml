@@ -987,6 +987,6 @@ let simplify_unary_primitive dacc original_prim (prim : P.unary_primitive) ~arg
     | Get_header -> simplify_get_header ~original_prim
     | Peek _ -> simplify_peek ~original_prim
     | Make_lazy _ -> simplify_lazy ~original_prim
-    | Cast_mallocd -> simplify_cast_mallocd
+    | Reinterpret_word_as_value -> simplify_cast_mallocd
   in
   simplifier dacc ~original_term ~arg ~arg_ty ~result_var
