@@ -359,7 +359,7 @@ let compute_static_size lam =
     | Pdls_get
     | Ppeek _
     | Ppoke _ ->
-      dynamic_size lam
+        dynamic_size lam
 
     (* Primitives specific to oxcaml *)
     | Pmakefloatblock (_, _) ->
