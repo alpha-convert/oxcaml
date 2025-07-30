@@ -13,7 +13,6 @@ end
 
 external use : 'a mallocd @ local unique -> ('a @ local external_ -> 'b) @ local once -> #('b Aliased.t * 'a mallocd) @ unique = "%use_mallocd"
 
-
 let print_and_add x y =
   print_endline (Int.to_string x);
   print_endline (Int.to_string y);
@@ -218,20 +217,8 @@ let () =
   f (malloc_ (`Foo 2));
   print_endline "\n"
 
-let f x y =
-  let #(r,m) = use (malloc_ (x,y)) @@ fun (a,b) ->
-    print_endline (Int.to_string (a + b));
-    a * b
-  in
-  print_endline (Int.to_string (r.aliased + 1));
-  let #(_,m') = use m @@ fun (a,b) ->
-    print_endline (Int.to_string (a * b))
-  in
-  m'
 
-let _ = f 2 3
-
-(* Nested use tests *)
+(*** Nested use tests ***)
 
 (* Two tuples nested *)
 let nested_tuples (m1 : (int * int) mallocd) (m2 : (int * int) mallocd) =
@@ -349,20 +336,15 @@ let nested_mutable_records (m1 : t11 mallocd) (m2 : t11 mallocd) =
     in
     print_endline (Int.to_string r2.aliased);
     (* Use the mutated m2 again *)
-    let #(r2_again, _) = use m2' @@ fun r2_mutated ->
-      print_endline ("After mutation: " ^ Int.to_string r2_mutated.x ^ ", " ^ Int.to_string r2_mutated.y);
-      r2_mutated.x + r2_mutated.y
+    let #(_ , _) = use m2' @@ fun r2_mutated ->
+      print_endline ("Final m2 state : " ^ Int.to_string r2_mutated.x ^ ", " ^ Int.to_string r2_mutated.y)
     in
-    print_endline (Int.to_string r2_again.aliased);
-    r1.x + r1.y
+    ()
   in
-  print_endline (Int.to_string r1.aliased);
   (* Use the mutated m1 again *)
-  let #(r1_final, _) = use m1' @@ fun r1_mutated ->
+  let #(_, _) = use m1' @@ fun r1_mutated ->
     print_endline ("Final m1 state: " ^ Int.to_string r1_mutated.x ^ ", " ^ Int.to_string r1_mutated.y);
-    r1_mutated.x * r1_mutated.y
   in
-  print_endline (Int.to_string r1_final.aliased);
   ()
 
 let () =
@@ -386,6 +368,204 @@ let () =
   print_endline "nested mixed records:";
   nested_mixed_records (malloc_ {x = 5; y = #10L}) (malloc_ {x = #15L; y = #20L});
   print_endline "\n"
+
+(*** Sequential use tests ***)
+
+(* Sequential use with mutable record - two uses *)
+let f (m : t11 mallocd) =
+  print_endline "First use:";
+  let #(r1, m) = use m @@ fun r ->
+    print_endline ("Initial: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+
+  print_endline "Second use:";
+  let #(r2, _) = use m @@ fun r ->
+    print_endline ("After first mutation: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+  ()
+
+let () =
+  print_endline "sequential mutable record - two uses:";
+  f (malloc_ {x = 1; y = 2});
+  print_endline "\n"
+
+(* Sequential use with mutable record - three uses *)
+let f (m : t11 mallocd) =
+  print_endline "First use:";
+  let #(r1, m) = use m @@ fun r ->
+    print_endline ("Initial: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+
+  print_endline "Second use:";
+  let #(r2, m) = use m @@ fun r ->
+    print_endline ("After first: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+
+  print_endline "Third use:";
+  let #(r3, _) = use m @@ fun r ->
+    print_endline ("After second: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("Result 3: " ^ Int.to_string r3.aliased);
+  ()
+
+let () =
+  print_endline "sequential mutable record - three uses:";
+  f (malloc_ {x = 1; y = 2});
+  print_endline "\n"
+
+(* Constructor with mutable record field *)
+type t13 = MutRec of {mutable a : int; mutable b : int}
+
+let f (m : t13 mallocd) =
+  print_endline "First use:";
+  let #(r1, m) = use m @@ fun (MutRec r) ->
+    print_endline ("Initial: a=" ^ Int.to_string r.a ^ ", b=" ^ Int.to_string r.b);
+    r.a <- r.a + 1;
+    r.b <- r.b + 1;
+    r.a + r.b
+  in
+  print_endline ("Result 1: " ^ Int.to_string r1.aliased);
+
+  print_endline "Second use:";
+  let #(r2, m) = use m @@ fun (MutRec r) ->
+    print_endline ("After first: a=" ^ Int.to_string r.a ^ ", b=" ^ Int.to_string r.b);
+    r.a <- r.a + 1;
+    r.b <- r.b + 1;
+    r.a + r.b
+  in
+  print_endline ("Result 2: " ^ Int.to_string r2.aliased);
+
+  print_endline "Third use:";
+  let #(r3, _) = use m @@ fun (MutRec r) ->
+    print_endline ("After second: a=" ^ Int.to_string r.a ^ ", b=" ^ Int.to_string r.b);
+    r.a <- r.a + 1;
+    r.b <- r.b + 1;
+    r.a + r.b
+  in
+  print_endline ("Result 3: " ^ Int.to_string r3.aliased);
+  ()
+
+let () =
+  print_endline "sequential constructor with mutable record:";
+  f (malloc_ (MutRec {a = 1; b = 2}));
+  print_endline "\n"
+
+(* Mixed sequential uses - different record types *)
+let f (m1 : t11 mallocd) (m2 : t12 mallocd) =
+  print_endline "First record, first use:";
+  let #(r1, m1) = use m1 @@ fun r ->
+    print_endline ("t11 initial: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("t11 result 1: " ^ Int.to_string r1.aliased);
+
+  print_endline "Second record, first use:";
+  let #(r2, m2) = use m2 @@ fun r ->
+    print_endline ("t12 initial: x=" ^ Int.to_string r.x ^ ", y=" ^ Int64_u.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- Int64_u.add r.y #1L;
+    r.x + Int64_u.to_int r.y
+  in
+  print_endline ("t12 result 1: " ^ Int.to_string r2.aliased);
+
+  print_endline "First record, second use:";
+  let #(r3, _) = use m1 @@ fun r ->
+    print_endline ("t11 after first: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    r.x + r.y
+  in
+  print_endline ("t11 result 2: " ^ Int.to_string r3.aliased);
+
+  print_endline "Second record, second use:";
+  let #(r4, _) = use m2 @@ fun r ->
+    print_endline ("t12 after first: x=" ^ Int.to_string r.x ^ ", y=" ^ Int64_u.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- Int64_u.add r.y #1L;
+    r.x + Int64_u.to_int r.y
+  in
+  print_endline ("t12 result 2: " ^ Int.to_string r4.aliased);
+  ()
+
+let () =
+  print_endline "sequential mixed mutable records:";
+  f (malloc_ {x = 1; y = 2}) (malloc_ {x = 1; y = #2L});
+  print_endline "\n"
+
+(*** GC during and around use tests ***)
+
+(* Sequential use with GC between uses *)
+let f (m : t11 mallocd) =
+  print_endline "First use:";
+  let #(_, m) = use m @@ fun r ->
+    print_endline ("Initial: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    ()
+  in
+  print_endline "Running GC...";
+  Gc.full_major ();
+  let #(_, _) = use m @@ fun r ->
+    print_endline ("After GC: x=" ^ Int.to_string r.x ^ ", y=" ^ Int.to_string r.y);
+    r.x <- r.x + 1;
+    r.y <- r.y + 1;
+    ()
+  in
+  ()
+
+let () =
+  print_endline "sequential use with GC between uses:";
+  f (malloc_ {x = 1; y = 2});
+  print_endline "\n"
+
+(* Nested use with GCs *)
+let f (m1 : t11 mallocd) (m2 : t11 mallocd) =
+  let #(_, _) = use m1 @@ fun r1 ->
+    print_endline ("Outer initial: x=" ^ Int.to_string r1.x ^ ", y=" ^ Int.to_string r1.y);
+    Gc.full_major ();
+    r1.x <- r1.x + 1;
+    r1.y <- r1.y + 1;
+    Gc.full_major ();
+
+    let #(_, _) = use m2 @@ fun r2 ->
+      Gc.full_major ();
+      print_endline ("Inner after GC: x=" ^ Int.to_string r2.x ^ ", y=" ^ Int.to_string r2.y);
+      r2.x <- r2.x + 1;
+      r2.y <- r2.y + 1;
+      Gc.full_major ();
+      ()
+    in
+    ()
+  in
+  ()
+
+let () =
+  print_endline "nested use with GCs:";
+  f (malloc_ {x = 1; y = 2}) (malloc_ {x = 1; y = 2});
+  print_endline "\n"
+
+
 
 (* @ uhique
 let _ =

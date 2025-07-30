@@ -102,9 +102,6 @@ polymorphic variant:
 4
 
 
-5
-7
-6
 nested tuples:
 6
 8
@@ -151,11 +148,8 @@ nested mutable records with mutations:
 3
 7
 10
-After mutation: 6, 12
-18
-33
+Final m2 state : 6, 12
 Final m1 state: 11, 22
-242
 
 
 nested mixed records:
@@ -163,5 +157,65 @@ nested mixed records:
 45
 50
 15
+
+
+sequential mutable record - two uses:
+First use:
+Initial: x=1, y=2
+Result 1: 5
+Second use:
+After first mutation: x=2, y=3
+Result 2: 7
+
+
+sequential mutable record - three uses:
+First use:
+Initial: x=1, y=2
+Result 1: 5
+Second use:
+After first: x=2, y=3
+Result 2: 7
+Third use:
+After second: x=3, y=4
+Result 3: 9
+
+
+sequential constructor with mutable record:
+First use:
+Initial: a=1, b=2
+Result 1: 5
+Second use:
+After first: a=2, b=3
+Result 2: 7
+Third use:
+After second: a=3, b=4
+Result 3: 9
+
+
+sequential mixed mutable records:
+First record, first use:
+t11 initial: x=1, y=2
+t11 result 1: 5
+Second record, first use:
+t12 initial: x=1, y=2
+t12 result 1: 5
+First record, second use:
+t11 after first: x=2, y=3
+t11 result 2: 7
+Second record, second use:
+t12 after first: x=2, y=3
+t12 result 2: 7
+
+
+sequential use with GC between uses:
+First use:
+Initial: x=1, y=2
+Running GC...
+After GC: x=2, y=3
+
+
+nested use with GCs:
+Outer initial: x=1, y=2
+Inner after GC: x=1, y=2
 
 
