@@ -321,7 +321,7 @@ and expression_desc =
 
 and free_to_unbox =
   | Tftu_tuple of {num_fields : int}
-  | Tftu_record of { unboxed_version : Path.t }
+  | Tftu_record of { boxed_repr : record_representation }
 
 and free_to =
   | Tfree_to_unbox of free_to_unbox
