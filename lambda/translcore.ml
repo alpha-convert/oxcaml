@@ -1298,7 +1298,210 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
   | Texp_hole _ ->
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
-  | Texp_free (e,_) -> transl_exp ~scopes sort e
+  | Texp_free (e,free_to) ->
+    let l = transl_exp ~scopes sort e in
+    let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
+    let block_fields n =
+      List.init n (fun i ->
+          Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+    in
+    let make_free ~result_layout ~result_lam =
+      let result_id = Ident.create_local "res" in
+      let result_duid = Lambda.debug_uid_none in
+      let free_op = Lprim (Pfree_external_block, [l], of_location ~scopes e.exp_loc) in
+      Llet (Strict, result_layout, result_id, result_duid, result_lam,
+            Lsequence (free_op, Lvar result_id))
+    in
+    let make_free_to_unboxed layouts lams =
+      let result_lam = Lprim (Pmake_unboxed_product layouts, lams , of_location ~scopes e.exp_loc) in
+      make_free ~result_layout:(Lambda.layout_unboxed_product layouts) ~result_lam
+    in
+    let make_free_to_stack ~tag block_shape mut lams =
+      let result_lam =
+        Lprim
+          (Pmakeblock (tag,mut,block_shape,Lambda.alloc_local),
+          lams,
+          of_location ~scopes e.exp_loc)
+      in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    in
+    let make_free_to_stack_mixed ~tag block_shape mut lams =
+      let result_lam = Lprim (Pmakemixedblock (tag,mut,block_shape,Lambda.alloc_local) , lams , of_location ~scopes e.exp_loc) in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    in
+    begin match free_to with
+    | Tfree_to_unbox(Tftu_tuple({num_fields})) ->
+        let layouts =
+          List.init num_fields (fun _ -> Lambda.layout_value_field)
+        in
+        let fields = block_fields num_fields in
+        make_free_to_unboxed layouts fields
+    | Tfree_to_unbox(Tftu_record_boxed({sorts})) ->
+          let layouts =
+            Array.map Lambda.layout_of_const_sort sorts
+            |> Array.to_list
+          in
+          let fields = block_fields (Array.length sorts) in
+          make_free_to_unboxed layouts fields
+    | Tfree_to_unbox(Tftu_record_mixed({shape})) ->
+      let lambda_shape =
+        Lambda.transl_mixed_product_shape_for_read
+          ~get_value_kind:(fun _i -> Lambda.generic_value)
+          ~get_mode:(fun _i -> Lambda.alloc_external)
+          shape
+      in
+      let field_extracts =
+        List.init (Array.length shape) (fun i ->
+            Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let layouts =
+        List.init (Array.length shape) (fun i ->
+          Lambda.layout_of_mixed_block_shape lambda_shape ~path:[i])
+      in
+      make_free_to_unboxed layouts field_extracts
+    | Tfree_to_stack(Tfts_tuple({num_fields})) ->
+      let block_shape =
+        Some (List.init num_fields (fun _ -> Lambda.generic_value))
+      in
+      let fields = block_fields num_fields in
+      make_free_to_stack ~tag:0 block_shape Lambda.Immutable fields
+    | Tfree_to_stack(Tfts_record_boxed({sorts; is_mutable})) ->
+      let layouts =
+        Array.map Lambda.layout_of_const_sort sorts
+        |> Array.to_list
+      in
+      let block_shape = Some (List.map Lambda.must_be_value layouts) in
+      let fields = block_fields (Array.length sorts) in
+      let mutability = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      make_free_to_stack ~tag:0 block_shape mutability fields
+    | Tfree_to_stack(Tfts_record_mixed({shape;is_mutable})) ->
+      let lambda_shape_for_read =
+        Lambda.transl_mixed_product_shape_for_read
+          ~get_value_kind:(fun _i -> Lambda.generic_value)
+          ~get_mode:(fun _i -> Lambda.alloc_external)
+          shape
+      in
+      let field_extracts =
+        List.init (Array.length shape) (fun i ->
+            Lprim (Pmixedfield ([i], lambda_shape_for_read, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let lambda_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape_for_read in
+      let mutability = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      make_free_to_stack_mixed ~tag:0 lambda_shape mutability field_extracts
+    | Tfree_to_stack(Tfts_record_float{num_fields;is_mutable}) ->
+      let field_extracts =
+        List.init num_fields (fun i ->
+          Lprim (Pfloatfield (i, Reads_agree, Lambda.alloc_local), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      let result_lam =
+        Lprim
+          (Pmakefloatblock (mut,Lambda.alloc_local),
+          field_extracts,
+          of_location ~scopes e.exp_loc)
+      in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    | Tfree_to_stack(Tfts_record_ufloat{num_fields; is_mutable}) ->
+      let field_extracts =
+        List.init num_fields (fun i ->
+          Lprim (Pufloatfield (i, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      let result_lam =
+        Lprim
+          (Pmakeufloatblock (mut,Lambda.alloc_local),
+          field_extracts,
+          of_location ~scopes e.exp_loc)
+      in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    | Tfree_to_stack(Tfts_variant_boxed{constructors}) ->
+      let (sw_blocks, sw_consts) =
+        List.partition_map (fun (tag, cstr_shape, is_mutable) ->
+          match cstr_shape with
+          | Tfts_constructor_const { tag } ->
+            let const_result = Lconst (const_int tag) in
+            Either.Right (tag, const_result)
+          | Tfts_constructor_vals { sorts } ->
+            let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+            let layouts =
+              List.map Lambda.layout_of_const_sort sorts
+            in
+            let block_shape = Some (List.map Lambda.must_be_value layouts) in
+            let fields = List.init (List.length layouts) (fun i ->
+              Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+            let result_lam = make_free_to_stack ~tag block_shape mut fields in
+            Either.Left (tag, result_lam)
+          | Tfts_constructor_mixed shape ->
+            let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+            let lambda_shape =
+              Lambda.transl_mixed_product_shape_for_read
+                ~get_value_kind:(fun _i -> Lambda.generic_value)
+                ~get_mode:(fun _i -> Lambda.alloc_external)
+                  shape
+            in
+            let extracts = List.init (Array.length shape) (fun i ->
+              Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+            let mixed_block_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape in
+            let result_lam = make_free_to_stack_mixed ~tag mixed_block_shape mut extracts in
+            Either.Left (tag, result_lam))
+        constructors
+      in
+      let sw = {
+        sw_numconsts = List.length sw_consts;
+        sw_consts;
+        sw_numblocks = List.length sw_blocks;
+        sw_blocks;
+        sw_failaction = None;
+      } in
+      Lswitch (l_cast, sw, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value)
+    | Tfree_to_stack(Tfts_polymorphic_variant{constructors}) ->
+      let const_constructors, nonconst_constructors =
+        List.partition_map (fun constructor ->
+          match constructor with
+          | Tfts_poly_variant_const { tag } ->
+            let const_result = Lconst (const_int tag) in
+            Either.Left (tag, const_result)
+          | Tfts_poly_variant_val { tag } ->
+            Either.Right tag)
+        constructors
+      in
+      let build_const_chain cases =
+        let rec loop = function
+          | [] ->
+            Misc.fatal_error "Impossible, expected at least one constructor"
+          | [(_, res)] -> res
+          | (tag, res) :: rest ->
+            let cond = Lprim (Pintcomp Ceq, [l_cast; Lconst (const_int tag)], of_location ~scopes e.exp_loc) in
+            Lifthenelse (cond, res, loop rest, Lambda.Pvalue Lambda.generic_value)
+        in
+        loop cases
+      in
+      let build_nonconst_chain tags =
+        let field_value = Lprim (Pfield (1, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
+        let block_shape = Some [Lambda.generic_value; Lambda.generic_value] in
+        let tag_extract = Lprim (Pfield (0, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
+        let rec loop = function
+          | [] ->
+            Misc.fatal_error "Impossible, expected at least one constructor"
+          | [tag] ->
+            make_free_to_stack ~tag:0 block_shape Lambda.Immutable [Lconst (const_int tag); field_value]
+          | tag :: rest ->
+            let cond = Lprim (Pintcomp Ceq, [tag_extract; Lconst (const_int tag)], of_location ~scopes e.exp_loc) in
+            let result = make_free_to_stack ~tag:0 block_shape Lambda.Immutable [Lconst (const_int tag); field_value] in
+            Lifthenelse (cond, result, loop rest, Lambda.Pvalue Lambda.generic_value)
+        in
+        loop tags
+      in
+      match const_constructors, nonconst_constructors with
+      | [], [] -> Misc.fatal_error "Impossible, expected at least one constructor"
+      | const_cases, [] -> build_const_chain const_cases
+      | [], nonconst_tags -> build_nonconst_chain nonconst_tags
+      | const_cases, nonconst_tags ->
+        let const_lam = build_const_chain const_cases in
+        let nonconst_lam = build_nonconst_chain nonconst_tags in
+        Lifthenelse (Lprim (Pisint { variant_only = true }, [l_cast], of_location ~scopes e.exp_loc),
+                    const_lam, nonconst_lam, Lambda.Pvalue Lambda.generic_value)
+    end
 
 and pure_module m =
   match m.mod_desc with

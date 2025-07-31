@@ -1,0 +1,398 @@
+2 3
+tuple: free was called
+
+2 3 4
+tuple3: free was called
+
+2
+singleton record: free was called
+
+2 3
+two-element record: free was called
+
+2 3
+mutable two-element record: free was called
+
+2 3
+mixed record: free was called
+
+2 3
+mixed record 2: free was called
+
+2 3
+oops all unboxed: free was called
+
+1.000000 2.000000 3.000000
+float record: free was called
+
+1.2.3.ufloat record: free was called
+
+1 x 2.500000 42
+four-field mixed record: free was called
+
+3.140000 5 a 100
+four-field mixed with ufloat record: free was called
+
+1 2 3 4
+four-field all int record: free was called
+
+10 1.500000 z
+three-field mixed mutable record: free was called
+
+1.100000 2.200000 3.300000 4.400000
+four-field all ufloat record: free was called
+
+Foo 42
+single constructor int: free was called
+
+Foo 1 2
+single constructor record: free was called
+
+Foo 1 2
+single constructor mixed record: free was called
+
+Foo 1 2
+single constructor unboxed record: free was called
+
+Foo 1 2
+single constructor mixed record 2: free was called
+
+Foo 1.000000 2.000000
+single constructor float record: free was called
+
+Foo 1.000000 2.000000
+single constructor ufloat record: free was called
+
+Foo 42
+two constructors int/char, Foo case: free was called
+
+Bar c
+two constructors int/char, Bar case: free was called
+
+Foo 1 2
+two constructors record/char, Foo case: free was called
+
+Bar c
+two constructors record/char, Bar case: free was called
+
+Foo 1 2
+two constructors mixed record/char, Foo case: free was called
+
+Bar c
+two constructors mixed record/char, Bar case: free was called
+
+Foo 1 2
+two constructors unboxed record/char, Foo case: free was called
+
+Bar c
+two constructors unboxed record/char, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors float record/char, Foo case: free was called
+
+Bar c
+two constructors float record/char, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors ufloat record/char, Foo case: free was called
+
+Bar c
+two constructors ufloat record/char, Bar case: free was called
+
+Foo 42
+two constructors int/record, Foo case: free was called
+
+Bar 1 2
+two constructors int/record, Bar case: free was called
+
+Foo 1 2
+two constructors both regular records, Foo case: free was called
+
+Bar 3 4
+two constructors both regular records, Bar case: free was called
+
+Foo 1 2
+two constructors mixed/regular records, Foo case: free was called
+
+Bar 3 4
+two constructors mixed/regular records, Bar case: free was called
+
+Foo 1 2
+two constructors unboxed/regular records, Foo case: free was called
+
+Bar 3 4
+two constructors unboxed/regular records, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors float/regular records, Foo case: free was called
+
+Bar 3 4
+two constructors float/regular records, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors ufloat/regular records, Foo case: free was called
+
+Bar 3 4
+two constructors ufloat/regular records, Bar case: free was called
+
+Foo 42
+two constructors int/mixed record, Foo case: free was called
+
+Bar 1 2
+two constructors int/mixed record, Bar case: free was called
+
+Foo 1 2
+two constructors regular/mixed records, Foo case: free was called
+
+Bar 3 4
+two constructors regular/mixed records, Bar case: free was called
+
+Foo 1 2
+two constructors both mixed records, Foo case: free was called
+
+Bar 3 4
+two constructors both mixed records, Bar case: free was called
+
+Foo 1 2
+two constructors unboxed/mixed records, Foo case: free was called
+
+Bar 3 4
+two constructors unboxed/mixed records, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors float/mixed records, Foo case: free was called
+
+Bar 3 4
+two constructors float/mixed records, Bar case: free was called
+
+Foo 1.000000 2.000000
+two constructors ufloat/mixed records, Foo case: free was called
+
+Bar 3 4
+two constructors ufloat/mixed records, Bar case: free was called
+
+Foo 1 2
+single constructor mutable record: free was called
+
+Foo 1 2
+two constructors both mutable records, Foo case: free was called
+
+Bar 3 4
+two constructors both mutable records, Bar case: free was called
+
+Foo 42 a
+single constructor tuple int*char: free was called
+
+Foo 1 2
+single constructor tuple int*int: free was called
+
+Foo 1 2
+single constructor tuple int*int64#: free was called
+
+Foo 1 2
+single constructor tuple int64#*int64#: free was called
+
+Foo 1.000000 2.000000
+single constructor tuple float*float: free was called
+
+Foo 1.000000 2.000000
+single constructor tuple float#*float#: free was called
+
+Foo 1 2
+single constructor tuple int64#*int: free was called
+
+Foo 1.000000 2
+single constructor tuple float*int: free was called
+
+Foo 1.000000 2
+single constructor tuple float#*int: free was called
+
+Foo 1 2.000000
+single constructor tuple int*float#: free was called
+
+Foo 42 a 3.140000
+single constructor tuple int*char*float: free was called
+
+Foo 1 a
+two tuple constructors int*char, Foo case: free was called
+
+Bar 2 b
+two tuple constructors int*char, Bar case: free was called
+
+Foo 1 2
+two tuple constructors int*int vs char*char, Foo case: free was called
+
+Bar a b
+two tuple constructors int*int vs char*char, Bar case: free was called
+
+Foo 1 2
+two tuple constructors mixed types, Foo case: free was called
+
+Bar a 3.140000
+two tuple constructors mixed types, Bar case: free was called
+
+Foo 1 2
+two tuple constructors unboxed types, Foo case: free was called
+
+Bar 1.000000 2.000000
+two tuple constructors unboxed types, Bar case: free was called
+
+Foo 42
+single value constructor int: free was called
+
+Foo 42
+single value constructor int64#: free was called
+
+Foo 3.140000
+single value constructor float#: free was called
+
+Foo 1 2
+two tuple constructors int64#*int vs float*float#, Foo case: free was called
+
+Bar 3.000000 4.000000
+two tuple constructors int64#*int vs float*float#, Bar case: free was called
+
+Foo 1.000000 2
+two tuple constructors float#*int64# vs int*char, Foo case: free was called
+
+Bar 3 c
+two tuple constructors float#*int64# vs int*char, Bar case: free was called
+
+Foo 1 a
+tuple vs record constructors, Foo case: free was called
+
+Bar 2 3
+tuple vs record constructors, Bar case: free was called
+
+Foo 1 a
+record vs tuple constructors, Foo case: free was called
+
+Bar 2 b
+record vs tuple constructors, Bar case: free was called
+
+Foo 1 2
+mixed tuple vs mixed record constructors, Foo case: free was called
+
+Bar 3.000000 4.000000
+mixed tuple vs mixed record constructors, Bar case: free was called
+
+A 1
+four constructors single values, A case: free was called
+
+B x
+four constructors single values, B case: free was called
+
+C 3.140000
+four constructors single values, C case: free was called
+
+D 42
+four constructors single values, D case: free was called
+
+Red 1 r
+four constructors mixed types, Red case: free was called
+
+Green 10 2.500000
+four constructors mixed types, Green case: free was called
+
+Blue 3.140000 100
+four constructors mixed types, Blue case: free was called
+
+Yellow 42
+four constructors mixed types, Yellow case: free was called
+
+One 1
+five constructors progression, One case: free was called
+
+Two 2 3
+five constructors progression, Two case: free was called
+
+Three 4 5 6
+five constructors progression, Three case: free was called
+
+Four 7 8 9 10
+five constructors progression, Four case: free was called
+
+Five 2.710000
+five constructors progression, Five case: free was called
+
+Alpha 1 a
+five constructors complex, Alpha case: free was called
+
+Beta 2.000000 3.000000
+five constructors complex, Beta case: free was called
+
+Gamma 4 5 g
+five constructors complex, Gamma case: free was called
+
+Delta 6
+five constructors complex, Delta case: free was called
+
+Epsilon 7 8.000000
+five constructors complex, Epsilon case: free was called
+
+Foo 42
+variant with nullary constructor, Foo case: free was called
+
+Baz z
+variant with nullary constructor, Baz case: free was called
+
+Some 1 a
+option-like variant with nullary None: free was called
+
+Single 10
+multi-constructor with nullary, Single case: free was called
+
+Pair 20 30
+multi-constructor with nullary, Pair case: free was called
+
+Triple 40 50 60
+multi-constructor with nullary, Triple case: free was called
+
+Middle 5 3.140000
+variant with nullary constructors and record: free was called
+
+One 100
+variant with nullary and unboxed types, One case: free was called
+
+Two 1.500000 2.500000
+variant with nullary and unboxed types, Two case: free was called
+
+Second 7 x
+variant with nullary and mutable record, Second case: free was called
+
+Third 42
+variant with nullary and mutable record, Third case: free was called
+
+Foo 42
+single polymorphic variant constructor: free was called
+
+Foo 42
+two polymorphic variant constructors, Foo case: free was called
+
+Bar z
+two polymorphic variant constructors, Bar case: free was called
+
+Red 10
+three polymorphic variant constructors, Red case: free was called
+
+Green g
+three polymorphic variant constructors, Green case: free was called
+
+Blue 3.140000
+three polymorphic variant constructors, Blue case: free was called
+
+One 1
+five same-type polymorphic variants, One case: free was called
+
+Two 2
+five same-type polymorphic variants, Two case: free was called
+
+Three 3
+five same-type polymorphic variants, Three case: free was called
+
+Four 4
+five same-type polymorphic variants, Four case: free was called
+
+Five 5
+five same-type polymorphic variants, Five case: free was called
+

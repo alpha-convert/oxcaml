@@ -122,9 +122,7 @@ type t = { mutable x : int64#; y : float#; }
 val f : t mallocd @ unique -> t# = <fun>
 |}]
 
-(* Some things have unbxoed versions even though we can'externally t allocate
-them yet, but it's fine to say that they can be free.
-*)
+(* Some things have unboxed versions, and we still don't want to free them... *)
 let f (x : float mallocd) = free_ x
 [%%expect {|
 Line 1, characters 34-35:
@@ -234,6 +232,51 @@ Line 7, characters 32-33:
                                     ^
 Error: Cannot free values of type "M.t"
 |}]
+
+(*Cannot free float records or unboxed float records, they do not have unboxed versions *)
+type t = {x : float; y : float}
+let f (x : t mallocd) = free_ x
+[%%expect{|
+type t = { x : float; y : float; }
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+type t = {x : float#; y : float#}
+let f (x : t mallocd) = free_ x
+[%%expect{|
+type t = { x : float#; y : float#; }
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" does not have an unboxed version, try free_stack_
+|}]
+
+(* Unboxed records cannot be freed, they are unboxed! *)
+type t = {x : int} [@@unboxed]
+let f (x : t mallocd) = free_ x
+[%%expect{|
+type t = { x : int; } [@@unboxed]
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type t/422[25] is an unboxed record, nothing to free.
+|}]
+
+(*Inline records cannot be freed *)
+type t = Foo of {x : int; y : int}
+let f ((Foo r) : t mallocd) = free_ r
+[%%expect{|
+type t = Foo of { x : int; y : int; }
+Line 2, characters 7-14:
+2 | let f ((Foo r) : t mallocd) = free_ r
+           ^^^^^^^
+Error: This pattern matches values of type "t"
+       but a pattern was expected which matches values of type "t mallocd"
+|}]
+
 
 
 (* Cannot unboxed-free sum types, they do not have unboxed versions,
@@ -351,6 +394,15 @@ Line 2, characters 8-9:
 2 |   free_ x
             ^
 Error: Cannot free values of type "int"
+|}]
+
+let f (x : float mallocd) =
+  free_ x
+[%%expect {|
+Line 2, characters 8-9:
+2 |   free_ x
+            ^
+Error: Type "float" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (t : (int -> int) mallocd) = free_ t

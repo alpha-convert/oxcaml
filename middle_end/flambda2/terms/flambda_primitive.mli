@@ -464,6 +464,7 @@ type unary_primitive =
   | Make_lazy of Lazy_block_tag.t
   | Reinterpret_nativeint_as_value
       (** Unsafely cast a naked nativeint to pointer to a block *)
+  | Free_external_block  (** Free an externally allocated block *)
 
 (** Whether a comparison is to yield a boolean result, as given by a particular
     comparison operator, or whether it is to behave in the manner of "compare"
