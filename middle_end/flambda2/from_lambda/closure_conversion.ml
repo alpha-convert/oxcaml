@@ -1093,7 +1093,7 @@ let close_primitive acc env ~let_bound_ids_with_kinds named
       | Patomic_load_field _ | Patomic_set_field _ | Pcpu_relax
       | Preinterpret_tagged_int63_as_unboxed_int64
       | Preinterpret_unboxed_int64_as_tagged_int63 | Ppeek _ | Ppoke _
-      | Pmakelazyblock _ | Preinterpret_word_as_value ->
+      | Pmakelazyblock _ | Preinterpret_word_as_value | Pfree_external_block ->
         (* Inconsistent with outer match *)
         assert false
     in

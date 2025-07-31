@@ -7248,15 +7248,15 @@ and type_expect_
               expected_mode
       in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
-      let exp_type =
+      let exp_type,free_to =
         match free_to with
         | Pfree_to_unbox ->
-          (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
+          (* Cr jcutler clean this code it's a mess *)
           begin match get_expanded_desc env inner_ty with
-          | Ttuple args -> newty (Tunboxed_tuple(args))
+          | Ttuple args -> newty (Tunboxed_tuple(args)), Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
           | Tconstr(p,args,m) ->
               let p = get_unboxed_version p env in
-              newty (Tconstr(p,args,m))
+              newty (Tconstr(p,args,m)), Tfree_to_unbox(Tftu_record{unboxed_version = p})
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
           end
@@ -7274,7 +7274,7 @@ and type_expect_
             submode ~loc ~env
               (Value.min_with_comonadic Areality Regionality.local)
               expected_mode;
-            inner_ty
+            inner_ty, Tfree_to_stack
       in
       if not (is_principal inner_ty) && !Clflags.principal then begin
         let msg =
@@ -7286,10 +7286,6 @@ and type_expect_
         Location.prerr_warning loc (Warnings.Not_principal msg)
       end;
       unify_exp_types loc env exp_type ty_expected;
-      let free_to = match free_to with
-                    | Pfree_to_stack -> Tfree_to_stack
-                    | Pfree_to_unbox -> Tfree_to_unbox
-      in
       let exp_desc = Texp_free(exp,free_to) in
       re {
         exp_desc = exp_desc;

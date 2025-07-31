@@ -2146,6 +2146,7 @@ let lambda_primitive_needs_event_after = function
   | Pbox_float (_, _) | Pbox_int _ | Pbox_vector (_, _)
   | Punbox_unit
   | Preinterpret_word_as_value
+  | Pfree_external_block
     -> false
 
 (* Determine if a primitive should be surrounded by an "after" debug event *)

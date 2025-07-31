@@ -1299,6 +1299,7 @@ module Const = struct
       && Mod_bounds.equal t1.mod_bounds t2.mod_bounds
     | None -> false
 
+  (* word mod external_ *)
   let kind_of_mallocd type_expr =
     let layout = Layout.Const.of_sort_const (Base Sort.Word) in
     let mod_bounds =

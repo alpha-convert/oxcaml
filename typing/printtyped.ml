@@ -688,7 +688,8 @@ and expression i ppf x =
   | Texp_free (e,f) ->
     (match f with
      | Tfree_to_stack -> line i ppf "Texp_free stack";
-     | Tfree_to_unbox -> line i ppf "Texp_free");
+     | Tfree_to_unbox(_) -> line i ppf "Texp_free");
+     (* CR jcutler fix pritning *)
     expression i ppf e;
 
 and value_description i ppf x =

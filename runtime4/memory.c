@@ -606,6 +606,11 @@ CAMLexport intnat caml_alloc_malloc_with_reserved(mlsize_t wosize, tag_t tag,
   return v;
 }
 
+CAMLexport value caml_free_external(intnat x){
+  free((void *) Hp_val((value) x));
+  return Val_unit;
+}
+
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.
    For the GC to take dependent memory into account when computing

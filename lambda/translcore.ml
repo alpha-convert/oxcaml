@@ -1298,7 +1298,27 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
   | Texp_hole _ ->
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
-  | Texp_free (e,_) -> transl_exp ~scopes sort e
+  | Texp_free (e,Tfree_to_unbox(tfu)) ->
+    let l = transl_exp ~scopes sort e in
+    begin match tfu with
+    | Tftu_tuple({num_fields}) ->
+      (* CR jcutler: carefully read this *)
+        let layouts = List.init num_fields (fun _ -> Lambda.layout_value_field) in
+        let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
+        let field_extracts =
+          List.init num_fields (fun i ->
+            Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+        in
+        let unboxed_tuple = Lprim (Pmake_unboxed_product layouts, field_extracts, of_location ~scopes e.exp_loc) in
+        let result_id = Ident.create_local "res" in
+        let result_duid = Lambda.debug_uid_none in
+        let free_op = Lprim (Pfree_external_block, [l], of_location ~scopes e.exp_loc) in
+        Llet (Strict, Lambda.layout_unboxed_product layouts, result_id, result_duid, unboxed_tuple,
+              Lsequence (free_op, Lvar result_id))
+    | _ -> fatal_error ""
+    end
+  | Texp_free (e,Tfree_to_stack) ->
+    transl_exp ~scopes sort e
 
 and pure_module m =
   match m.mod_desc with

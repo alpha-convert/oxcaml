@@ -993,6 +993,7 @@ let rec choice ctx t =
     | Ppoll
     | Ppeek _ | Ppoke _
     | Preinterpret_word_as_value
+    | Pfree_external_block
       ->
         let primargs = traverse_list ctx primargs in
         Choice.lambda (Lprim (prim, primargs, loc))

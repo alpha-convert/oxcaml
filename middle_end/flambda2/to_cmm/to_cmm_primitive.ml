@@ -1116,6 +1116,13 @@ let unary_primitive env res dbg f arg =
     None, res, C.make_alloc ~mode:Heap dbg ~tag [arg]
   | Reinterpret_nativeint_as_value ->
     None, res, Cmm.Cop (Creinterpret_cast Value_of_int, [arg], dbg)
+  | Free_external_block ->
+    ( None,
+      res,
+      (* CR jcutler: is this right? *)
+      C.extcall ~dbg ~alloc:false ~returns:true ~is_c_builtin:false
+        ~effects:Arbitrary_effects ~coeffects:Has_coeffects ~ty_args:[XInt]
+        "caml_free_external" Cmm.typ_val [arg] )
 
 let binary_primitive env dbg f x y =
   match (f : P.binary_primitive) with

@@ -319,8 +319,12 @@ and expression_desc =
   | Texp_hole of unique_use
   | Texp_free of expression * free_to
 
+and free_to_unbox =
+  | Tftu_tuple of {num_fields : int}
+  | Tftu_record of { unboxed_version : Path.t }
+
 and free_to =
-  | Tfree_to_unbox
+  | Tfree_to_unbox of free_to_unbox
   | Tfree_to_stack
 
 and ident_kind =
