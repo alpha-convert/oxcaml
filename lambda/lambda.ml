@@ -411,6 +411,7 @@ type primitive =
   | Ppoll
   | Pcpu_relax
   | Preinterpret_word_as_value
+  | Pfree_external_block
 
 and extern_repr =
   | Same_as_ocaml_repr of Jkind.Sort.Const.t
@@ -2159,7 +2160,7 @@ let primitive_may_allocate : primitive -> allocation_mode option = function
          at a level where these primitives are necessary is very likely going
          to be native. *)
       Some alloc_heap
-  | Preinterpret_word_as_value -> None
+  | Preinterpret_word_as_value | Pfree_external_block -> None
 
 let primitive_can_raise prim =
   match prim with
@@ -2322,7 +2323,8 @@ let primitive_can_raise prim =
   | Preinterpret_tagged_int63_as_unboxed_int64
   | Preinterpret_unboxed_int64_as_tagged_int63
   | Parray_element_size_in_bytes _ | Ppeek _ | Ppoke _
-  | Preinterpret_word_as_value ->
+  | Preinterpret_word_as_value
+  | Pfree_external_block ->
     false
 
 let constant_layout: constant -> layout = function
@@ -2606,6 +2608,7 @@ let primitive_result_layout (p : primitive) =
     )
   | Ppoke _ -> layout_unit
   | Preinterpret_word_as_value -> layout_any_value
+  | Pfree_external_block -> layout_unit
 
 let compute_expr_layout free_vars_kind lam =
   let rec compute_expr_layout kinds = function

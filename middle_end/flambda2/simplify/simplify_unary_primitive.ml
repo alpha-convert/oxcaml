@@ -655,6 +655,10 @@ let simplify_reinterpret_nativeint_as_value dacc ~original_term ~arg:_ ~arg_ty:_
     ~result_var =
   SPR.create_unknown dacc ~result_var K.value ~original_term
 
+let simplify_free_external_block dacc ~original_term ~arg:_ ~arg_ty:_
+    ~result_var =
+  SPR.create_unknown dacc ~result_var K.value ~original_term
+
 let simplify_end_region dacc ~original_term ~arg:_ ~arg_ty:_ ~result_var =
   let ty = T.this_tagged_immediate Targetint_31_63.zero in
   let dacc = DA.add_variable dacc result_var ty in
@@ -989,5 +993,6 @@ let simplify_unary_primitive dacc original_prim (prim : P.unary_primitive) ~arg
     | Peek _ -> simplify_peek ~original_prim
     | Make_lazy _ -> simplify_lazy ~original_prim
     | Reinterpret_nativeint_as_value -> simplify_reinterpret_nativeint_as_value
+    | Free_external_block -> simplify_free_external_block
   in
   simplifier dacc ~original_term ~arg ~arg_ty ~result_var
