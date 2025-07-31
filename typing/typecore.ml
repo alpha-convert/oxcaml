@@ -7237,9 +7237,14 @@ and type_expect_
             try Env.find_type p env
             with Not_found -> unsupported (Decl_not_found p)
           in
-          match decl.type_unboxed_version with
+          (match decl.type_unboxed_version with
           | None -> unsupported (No_unboxed_version inner_ty)
-          | _ -> Path.unboxed_version p
+          | Some _ -> ());
+          let boxed_repr = match decl.type_kind with
+          | Type_record(_,repr,_) -> repr
+          | _ -> Misc.fatal_error "Only records at the moment, right?"
+          in
+          boxed_repr,(Path.unboxed_version p)
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =
@@ -7255,8 +7260,8 @@ and type_expect_
           begin match get_expanded_desc env inner_ty with
           | Ttuple args -> newty (Tunboxed_tuple(args)), Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
           | Tconstr(p,args,m) ->
-              let p = get_unboxed_version p env in
-              newty (Tconstr(p,args,m)), Tfree_to_unbox(Tftu_record{unboxed_version = p})
+              let boxed_repr,p_unboxed = get_unboxed_version p env in
+              newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(Tftu_record{boxed_repr})
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
           end
