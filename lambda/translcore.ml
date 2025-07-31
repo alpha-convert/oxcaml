@@ -1300,26 +1300,28 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
   | Texp_free (e,Tfree_to_unbox(tfu)) ->
     let l = transl_exp ~scopes sort e in
+    let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
     let make_free_to_unboxed_product layouts =
-      let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
       let field_extracts =
         List.mapi (fun i _layout ->
-          Lprim (Pfield (i, Pointer, Reads_agree), [l], of_location ~scopes e.exp_loc)) layouts
+          Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) layouts
       in
       let unboxed_product = Lprim (Pmake_unboxed_product layouts, field_extracts, of_location ~scopes e.exp_loc) in
       let result_id = Ident.create_local "res" in
       let result_duid = Lambda.debug_uid_none in
-      let free_op = Lprim (Pfree_external_block, [l_cast], of_location ~scopes e.exp_loc) in
+      let free_op = Lprim (Pfree_external_block, [l], of_location ~scopes e.exp_loc) in
       Llet (Strict, Lambda.layout_unboxed_product layouts, result_id, result_duid, unboxed_product,
             Lsequence (free_op, Lvar result_id))
     in
     begin match tfu with
     | Tftu_tuple({num_fields}) ->
-        let layouts = List.init num_fields (fun _ -> Lambda.layout_value_field) in
+        let layouts =
+          List.init num_fields (fun _ -> Lambda.layout_value_field)
+        in
         make_free_to_unboxed_product layouts
     | Tftu_record({sorts}) ->
           let layouts =
-            List.map (Lambda.layout_of_const_sort) sorts
+            List.map Lambda.layout_of_const_sort sorts
           in
           make_free_to_unboxed_product layouts
     end
