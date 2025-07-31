@@ -321,7 +321,7 @@ and expression_desc =
 
 and free_to_unbox =
   | Tftu_tuple of {num_fields : int}
-  | Tftu_record of { boxed_repr : record_representation }
+  | Tftu_record of { sorts : Jkind.Sort.Const.t list }
 
 and free_to =
   | Tfree_to_unbox of free_to_unbox
