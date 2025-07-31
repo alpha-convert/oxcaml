@@ -619,6 +619,8 @@ val must_be_value : layout -> value_kind
 
 val generic_value : value_kind
 
+val layout_of_const_sort : Jkind.Sort.Const.t -> layout
+
 (* This is the layout of ocaml values used as arguments to or returned from
    primitives for this [extern_repr].  So the legacy [Unboxed_float] - which is
    a float that is unboxed before being passed to a C function - is mapped to
