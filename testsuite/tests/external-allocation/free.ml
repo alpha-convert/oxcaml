@@ -66,6 +66,6 @@ type t5 = {x : int64#; y : int64#}
 let g5 x y = malloc_ {x;y}
 let () =
   let m = g5 #2L #3L in
-  test_with_malloc_tracking "mixed record all unboxed" (fun () ->
+  test_with_malloc_tracking "oops all unboxed" (fun () ->
     let #{x;y} = free_ m in
     Printf.printf "%Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y))
