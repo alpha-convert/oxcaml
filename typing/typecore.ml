@@ -153,6 +153,7 @@ type unsupported_external_allocation =
   | Array
 
 type unsupported_free =
+  | Has_unboxed_not_supported of type_expr
   | No_unboxed_version of type_expr
   | Already_unboxed of Path.t
   | Inlined_record of Path.t
@@ -7247,10 +7248,13 @@ and type_expect_
           | Type_record(_,Record_float,_) -> unsupported (No_unboxed_version inner_ty)
           | Type_record(_,Record_ufloat,_) -> unsupported (No_unboxed_version inner_ty)
           | Type_record(_,Record_unboxed,_) -> unsupported (Already_unboxed p)
-          | Type_record(_,Record_inlined(_,_,_),_) -> unsupported (Inlined_record p) (* free the varaint, please *)
+          (* CR jcutler for ccasinghino: I'm pretty sure this next case is unreachable?
+             since these types don't have names and the inference for free basically requries an
+             annotation somewhere, you can't ever end up with this. *)
+          | Type_record(_,Record_inlined(_,_,_),_) -> unsupported (Inlined_record p)
           | Type_record(_,Record_mixed shape,_) -> Tftu_record_mixed{shape}
           | Type_record(_,Record_boxed sorts,_) -> Tftu_record_boxed{sorts}
-          | _ -> Misc.fatal_error "Only records at the moment, right?"
+          | _ -> unsupported (Has_unboxed_not_supported inner_ty)
           in
           tfu,(Path.unboxed_version p)
       in
@@ -11673,9 +11677,13 @@ let report_error ~loc env =
   | Unexpected_hole ->
       Location.errorf ~loc
         "wildcard \"_\" not expected."
-        (* CR jcutler: message here. *)
   | Unsupported_free reason ->
         match reason with
+        | Has_unboxed_not_supported typ ->
+            Location.errorf ~loc
+              "Type %a has an unboxed version, but freeing it to unboxed\
+                is not yet supported"
+              (Style.as_inline_code Printtyp.type_expr) typ
         | No_unboxed_version typ ->
             Location.errorf ~loc
               "Type %a does not have an unboxed version, try free_stack_"
