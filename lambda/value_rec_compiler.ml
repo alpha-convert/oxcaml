@@ -416,7 +416,8 @@ let compute_static_size lam =
     | Pfloat32offloat _
     | Pget_header _
     | Preinterpret_tagged_int63_as_unboxed_int64
-    | Preinterpret_unboxed_int64_as_tagged_int63 ->
+    | Preinterpret_unboxed_int64_as_tagged_int63
+    | Preinterpret_word_as_value ->
         dynamic_size lam
   in
   compute_expression_size Ident.Map.empty lam

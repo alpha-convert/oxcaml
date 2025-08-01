@@ -969,6 +969,7 @@ let primitive ppf = function
   | Ppoke layout ->
       fprintf ppf "(poke@ %a)"
         peek_or_poke layout
+  | Preinterpret_word_as_value -> fprintf ppf "reinterpret_word_as_value"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -1169,6 +1170,7 @@ let name_of_primitive = function
       "Preinterpret_unboxed_int64_as_tagged_int63"
   | Ppeek _ -> "Ppeek"
   | Ppoke _ -> "Ppoke"
+  | Preinterpret_word_as_value -> "Preinterpret_word_as_value"
 
 let zero_alloc_attribute ppf check =
   match check with
