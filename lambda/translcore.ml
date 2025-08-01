@@ -1301,12 +1301,12 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
   | Texp_free (e,Tfree_to_unbox(tfu)) ->
     let l = transl_exp ~scopes sort e in
     let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
-    let make_free_to_unboxed_product layouts =
-      let field_extracts =
-        List.mapi (fun i _layout ->
-          Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) layouts
-      in
-      let unboxed_product = Lprim (Pmake_unboxed_product layouts, field_extracts, of_location ~scopes e.exp_loc) in
+    let block_fields n =
+      List.init n (fun i ->
+          Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+    in
+    let make_free_to_unboxed_product layouts fields =
+      let unboxed_product = Lprim (Pmake_unboxed_product layouts, fields , of_location ~scopes e.exp_loc) in
       let result_id = Ident.create_local "res" in
       let result_duid = Lambda.debug_uid_none in
       let free_op = Lprim (Pfree_external_block, [l], of_location ~scopes e.exp_loc) in
@@ -1318,12 +1318,32 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
         let layouts =
           List.init num_fields (fun _ -> Lambda.layout_value_field)
         in
-        make_free_to_unboxed_product layouts
-    | Tftu_record({sorts}) ->
+        let fields = block_fields num_fields in
+        make_free_to_unboxed_product layouts fields
+    | Tftu_record({repr = Record_boxed sorts}) ->
           let layouts =
-            List.map Lambda.layout_of_const_sort sorts
+            Array.map Lambda.layout_of_const_sort sorts
+            |> Array.to_list
           in
-          make_free_to_unboxed_product layouts
+          let fields = block_fields (Array.length sorts) in
+          make_free_to_unboxed_product layouts fields
+    | Tftu_record({repr = Record_mixed shape}) ->
+      let lambda_shape =
+        Lambda.transl_mixed_product_shape_for_read
+          ~get_value_kind:(fun _i -> Lambda.generic_value)
+          ~get_mode:(fun _i -> Lambda.alloc_external)
+          shape
+      in
+      let field_extracts =
+        List.init (Array.length shape) (fun i ->
+            Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let layouts =
+        List.init (Array.length shape) (fun i ->
+          Lambda.layout_of_mixed_block_shape lambda_shape ~path:[i])
+      in
+      make_free_to_unboxed_product layouts field_extracts
+    | Tftu_record({repr = _ }) -> failwith "Uniml"
     end
   | Texp_free (e,Tfree_to_stack) ->
     transl_exp ~scopes sort e
