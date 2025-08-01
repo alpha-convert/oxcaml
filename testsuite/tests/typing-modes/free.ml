@@ -199,7 +199,7 @@ let f (x : float mallocd) = free_ x
 Line 1, characters 34-35:
 1 | let f (x : float mallocd) = free_ x
                                       ^
-Error: Type "float" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "float" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (x : int64 mallocd) = free_ x
@@ -207,7 +207,7 @@ let f (x : int64 mallocd) = free_ x
 Line 1, characters 34-35:
 1 | let f (x : int64 mallocd) = free_ x
                                       ^
-Error: Type "int64" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "int64" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (x : int32 mallocd) = free_ x
@@ -215,7 +215,7 @@ let f (x : int32 mallocd) = free_ x
 Line 1, characters 34-35:
 1 | let f (x : int32 mallocd) = free_ x
                                       ^
-Error: Type "int32" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "int32" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = float
@@ -225,7 +225,7 @@ type t = float
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = int64
@@ -235,7 +235,7 @@ type t = int64
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = int32
@@ -245,7 +245,7 @@ type t = int32
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 (* Finding the unboxed version of a type works deeply through modules,
@@ -489,7 +489,7 @@ let f (x : float mallocd) =
 Line 2, characters 8-9:
 2 |   free_ x
             ^
-Error: Type "float" has an unboxed version, but freeing it to unboxedis not yet supported
+Error: Type "float" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (t : (int -> int) mallocd) = free_ t
