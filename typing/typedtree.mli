@@ -530,7 +530,10 @@ and expression_desc =
 
 and free_to_unbox =
   | Tftu_tuple of {num_fields : int}
-  | Tftu_record of { repr : Types.record_representation }
+  | Tftu_record_boxed of { sorts : Jkind_types.Sort.Const.t array }
+  | Tftu_record_mixed of { shape : Types.mixed_product_shape }
+  | Tftu_record_float of { num_fields : int }
+  | Tftu_record_ufloat of { num_fields : int }
 
 and free_to =
   | Tfree_to_unbox of free_to_unbox

@@ -7240,11 +7240,11 @@ and type_expect_
           (match decl.type_unboxed_version with
           | None -> unsupported (No_unboxed_version inner_ty)
           | Some _ -> ());
-          let repr = match decl.type_kind with
-          | Type_record(_,repr,_) -> repr
+          let num_fields,repr = match decl.type_kind with
+          | Type_record(fields,repr,_) -> (List.length fields,repr)
           | _ -> Misc.fatal_error "Only records at the moment, right?"
           in
-          repr,(Path.unboxed_version p)
+          num_fields,repr,(Path.unboxed_version p)
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =
@@ -7260,8 +7260,18 @@ and type_expect_
           begin match get_expanded_desc env inner_ty with
           | Ttuple args -> newty (Tunboxed_tuple(args)), Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
           | Tconstr(p,args,m) ->
-              let repr,p_unboxed = get_unboxed_version p env in
-              newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(Tftu_record{repr})
+              let num_fields,repr,p_unboxed = get_unboxed_version p env in
+              let tfu =
+                match repr with
+                | Record_boxed sorts -> Tftu_record_boxed {sorts}
+                | Record_float -> Tftu_record_float {num_fields}
+                | Record_ufloat -> Tftu_record_ufloat {num_fields}
+                | Record_mixed shape -> Tftu_record_mixed { shape }
+                | Record_inlined(_) | Record_unboxed ->
+                  (* CR jcutler: fixme,error mesg*)
+                  Misc.fatal_error "Impossible"
+              in
+              newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
           end
