@@ -1,0 +1,14 @@
+2 3
+tuple: Allocation Delta: 0
+2 3 4
+tuple3: Allocation Delta: 0
+2
+singleton record: Allocation Delta: 0
+2 3
+two-element record: Allocation Delta: 0
+2 3
+mixed record: Allocation Delta: 0
+2 3
+mixed record 2: Allocation Delta: 0
+2 3
+mixed record all unboxed: Allocation Delta: 0
