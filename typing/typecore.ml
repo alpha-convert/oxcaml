@@ -154,6 +154,8 @@ type unsupported_external_allocation =
 
 type unsupported_free =
   | No_unboxed_version of type_expr
+  | Already_unboxed of Path.t
+  | Inlined_record of Path.t
   | Decl_not_found of Path.t
   | Unfreeable of type_expr
 
@@ -7240,11 +7242,17 @@ and type_expect_
           (match decl.type_unboxed_version with
           | None -> unsupported (No_unboxed_version inner_ty)
           | Some _ -> ());
-          let num_fields,repr = match decl.type_kind with
-          | Type_record(fields,repr,_) -> (List.length fields,repr)
+          let tfu = match decl.type_kind with
+          (* CR jcutler: add these to the typing tests *)
+          | Type_record(_,Record_float,_) -> unsupported (No_unboxed_version inner_ty)
+          | Type_record(_,Record_ufloat,_) -> unsupported (No_unboxed_version inner_ty)
+          | Type_record(_,Record_unboxed,_) -> unsupported (Already_unboxed p)
+          | Type_record(_,Record_inlined(_,_,_),_) -> unsupported (Inlined_record p) (* free the varaint, please *)
+          | Type_record(_,Record_mixed shape,_) -> Tftu_record_mixed{shape}
+          | Type_record(_,Record_boxed sorts,_) -> Tftu_record_boxed{sorts}
           | _ -> Misc.fatal_error "Only records at the moment, right?"
           in
-          num_fields,repr,(Path.unboxed_version p)
+          tfu,(Path.unboxed_version p)
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =
@@ -7256,21 +7264,12 @@ and type_expect_
       let exp_type,free_to =
         match free_to with
         | Pfree_to_unbox ->
-          (* Cr jcutler clean this code it's a mess *)
           begin match get_expanded_desc env inner_ty with
-          | Ttuple args -> newty (Tunboxed_tuple(args)), Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
+          | Ttuple args ->
+              newty (Tunboxed_tuple(args)),
+              Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
           | Tconstr(p,args,m) ->
-              let num_fields,repr,p_unboxed = get_unboxed_version p env in
-              let tfu =
-                match repr with
-                | Record_boxed sorts -> Tftu_record_boxed {sorts}
-                | Record_float -> Tftu_record_float {num_fields}
-                | Record_ufloat -> Tftu_record_ufloat {num_fields}
-                | Record_mixed shape -> Tftu_record_mixed { shape }
-                | Record_inlined(_) | Record_unboxed ->
-                  (* CR jcutler: fixme,error mesg*)
-                  Misc.fatal_error "Impossible"
-              in
+              let tfu,p_unboxed = get_unboxed_version p env in
               newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
@@ -11677,11 +11676,18 @@ let report_error ~loc env =
         (* CR jcutler: message here. *)
   | Unsupported_free reason ->
         match reason with
-        (* CR jcutler: actually print the type! *)
         | No_unboxed_version typ ->
             Location.errorf ~loc
               "Type %a does not have an unboxed version, try free_stack_"
               (Style.as_inline_code Printtyp.type_expr) typ
+        | Already_unboxed p ->
+            Location.errorf ~loc
+              "Type %a is an unboxed record, nothing to free."
+              Path.print p
+        | Inlined_record p ->
+            Location.errorf ~loc
+              "Type %a is an inlined record (Hint: free_ the enclosing constructor)"
+              Path.print p
         | Decl_not_found p ->
             Location.errorf ~loc
               "Type %a does not have a definition in scope, cannot free it."

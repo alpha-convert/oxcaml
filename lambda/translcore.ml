@@ -1343,26 +1343,6 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
           Lambda.layout_of_mixed_block_shape lambda_shape ~path:[i])
       in
       make_free_to_unboxed layouts field_extracts
-    (* CR jcutler for ccasinghino: external boxed floats are not implemented, so
-       you can't exercise this code. *)
-    | Tftu_record_float({num_fields}) ->
-        let layouts =
-          List.init num_fields (fun _ -> Lambda.layout_boxed_float Boxed_float64)
-        in
-        let fields =
-          List.init num_fields (fun i ->
-              Lprim (Pfloatfield (i, Reads_agree, alloc_external), [l_cast], of_location ~scopes e.exp_loc))
-        in
-        make_free_to_unboxed layouts fields
-    | Tftu_record_ufloat({num_fields}) ->
-        let layouts =
-          List.init num_fields (fun _ -> Lambda.layout_unboxed_float Unboxed_float64)
-        in
-        let fields =
-          List.init num_fields (fun i ->
-              Lprim (Pufloatfield (i, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
-        in
-        make_free_to_unboxed layouts fields
     end
   | Texp_free (e,Tfree_to_stack) ->
     transl_exp ~scopes sort e
