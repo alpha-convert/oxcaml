@@ -11681,8 +11681,7 @@ let report_error ~loc env =
         match reason with
         | Has_unboxed_not_supported typ ->
             Location.errorf ~loc
-              "Type %a has an unboxed version, but freeing it to unboxed\
-                is not yet supported"
+              "Type %a has an unboxed version, but freeing it to unboxed is not yet supported"
               (Style.as_inline_code Printtyp.type_expr) typ
         | No_unboxed_version typ ->
             Location.errorf ~loc
