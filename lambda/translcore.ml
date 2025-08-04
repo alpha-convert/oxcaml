@@ -1317,7 +1317,12 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       make_free ~result_layout:(Lambda.layout_unboxed_product layouts) ~result_lam
     in
     let make_free_to_stack block_shape mut lams =
-      let result_lam = Lprim (Pmakeblock (0,mut,block_shape,Lambda.alloc_local) , lams , of_location ~scopes e.exp_loc) in
+      let result_lam =
+        Lprim
+          (Pmakeblock (0,mut,block_shape,Lambda.alloc_local),
+          lams,
+          of_location ~scopes e.exp_loc)
+      in
       make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
     in
     let make_free_to_stack_mixed block_shape mut lams =
@@ -1383,6 +1388,33 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       let lambda_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape_for_read in
       let mutability = if is_mutable then Lambda.Mutable else Lambda.Immutable in
       make_free_to_stack_mixed lambda_shape mutability field_extracts
+    | Tfree_to_stack(Tfts_record_float{num_fields;is_mutable}) ->
+      let field_extracts =
+        List.init num_fields (fun i ->
+          Lprim (Pfloatfield (i, Reads_agree, Lambda.alloc_local), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      let result_lam =
+        Lprim
+          (Pmakefloatblock (mut,Lambda.alloc_local),
+          field_extracts,
+          of_location ~scopes e.exp_loc)
+      in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    | Tfree_to_stack(Tfts_record_ufloat{num_fields; is_mutable}) ->
+      let field_extracts =
+        List.init num_fields (fun i ->
+          Lprim (Pufloatfield (i, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      let result_lam =
+        Lprim
+          (Pmakeufloatblock (mut,Lambda.alloc_local),
+          field_extracts,
+          of_location ~scopes e.exp_loc)
+      in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    | Tfree_to_stack(Tfts_variant_boxed{sorts = _}) -> Misc.fatal_error "Unimplemetned"
     end
 
 and pure_module m =

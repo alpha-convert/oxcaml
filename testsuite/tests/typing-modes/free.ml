@@ -302,7 +302,7 @@ module M : sig type t end
 Line 7, characters 32-33:
 7 | let f (x : M.t mallocd) = free_ x
                                     ^
-Error: Type "M.t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "M.t"
 |}]
 
 module M : sig
@@ -317,7 +317,7 @@ module M : sig type t end
 Line 7, characters 32-33:
 7 | let f (x : M.t mallocd) = free_ x
                                     ^
-Error: Type "M.t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "M.t"
 |}]
 
 (*Cannot free float records or unboxed float records, they do not have unboxed versions *)
@@ -349,7 +349,7 @@ type t = { x : int; } [@@unboxed]
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" does not have an unboxed version, try free_stack_
+Error: Type t/422[25] is an unboxed record, nothing to free.
 |}]
 
 (*Inline records cannot be freed *)
@@ -471,7 +471,7 @@ type t
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "t"
 |}]
 
 let f (x : int mallocd) =
@@ -480,7 +480,7 @@ let f (x : int mallocd) =
 Line 2, characters 8-9:
 2 |   free_ x
             ^
-Error: Type "int" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "int"
 |}]
 
 let f (x : float mallocd) =

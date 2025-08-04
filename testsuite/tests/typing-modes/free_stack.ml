@@ -350,30 +350,36 @@ type t = Foo of int
 let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect {|
 type t = Foo of int
-val f : t mallocd @ unique -> local_ t = <fun>
+>> Fatal error: Unimplemetned
+Uncaught exception: Misc.Fatal_error
+
 |}, Principal{|
 type t = Foo of int
 Line 2, characters 33-48:
 2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
                                      ^^^^^^^^^^^^^^^
 Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
+>> Fatal error: Unimplemetned
+Uncaught exception: Misc.Fatal_error
 
-val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 type t = Foo of int | Bar of char
 let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect {|
 type t = Foo of int | Bar of char
-val f : t mallocd @ unique -> local_ t = <fun>
+>> Fatal error: Unimplemetned
+Uncaught exception: Misc.Fatal_error
+
 |}, Principal{|
 type t = Foo of int | Bar of char
 Line 2, characters 33-48:
 2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
                                      ^^^^^^^^^^^^^^^
 Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
+>> Fatal error: Unimplemetned
+Uncaught exception: Misc.Fatal_error
 
-val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 (* GADTs work the same as variants *)
@@ -400,61 +406,30 @@ Error: Type "t" does not have an unboxed version, try free_stack_
 (* Can free anonymous variants *)
 let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x) 
 [%%expect{|
-val f : [ `Foo of int ] mallocd @ unique -> local_ [ `Foo of int ] = <fun>
-|}, Principal{|
-Line 1, characters 45-60:
-1 | let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x)
-                                                 ^^^^^^^^^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type [ `Foo of int ], which is not principal.
+Uncaught exception: Failure("Unimpl")
 
-val f : [ `Foo of int ] mallocd @ unique -> local_ [ `Foo of int ] = <fun>
 |}]
 
 let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x) 
 [%%expect{|
-val f :
-  [ `Bar of int * int | `Foo of int ] mallocd @ unique -> local_
-  [ `Bar of int * int | `Foo of int ] = <fun>
-|}, Principal{|
-Line 1, characters 65-80:
-1 | let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x)
-                                                                     ^^^^^^^^^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type [ `Bar of int * int
-                                             | `Foo of int ], which is not principal.
+Uncaught exception: Failure("Unimpl")
 
-val f :
-  [ `Bar of int * int | `Foo of int ] mallocd @ unique -> local_
-  [ `Bar of int * int | `Foo of int ] = <fun>
 |}]
 
 type t = [`Foo of int]
 let f (x : t mallocd) = exclave_ (free_stack_ x) 
 [%%expect{|
 type t = [ `Foo of int ]
-val f : t mallocd @ unique -> local_ t = <fun>
-|}, Principal{|
-type t = [ `Foo of int ]
-Line 2, characters 33-48:
-2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
-                                     ^^^^^^^^^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
+Uncaught exception: Failure("Unimpl")
 
-val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 type t = [`Foo of int | `Bar of int * int]
 let f (x : t mallocd) = exclave_ (free_stack_ x) 
 [%%expect{|
 type t = [ `Bar of int * int | `Foo of int ]
-val f : t mallocd @ unique -> local_ t = <fun>
-|}, Principal{|
-type t = [ `Bar of int * int | `Foo of int ]
-Line 2, characters 33-48:
-2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
-                                     ^^^^^^^^^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
+Uncaught exception: Failure("Unimpl")
 
-val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 (* Types that cannot be freed-to-stack *)

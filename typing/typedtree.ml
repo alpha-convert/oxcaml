@@ -326,8 +326,11 @@ and free_to_unbox =
 
 and free_to_stack =
   | Tfts_tuple of {num_fields : int}
-  | Tfts_record_boxed of { sorts : Jkind_types.Sort.Const.t array; is_mutable : bool }
-  | Tfts_record_mixed of { shape : Types.mixed_product_shape ; is_mutable : bool}
+  | Tfts_record_boxed of { sorts : Jkind_types.Sort.Const.t array; is_mutable : bool}
+  | Tfts_record_mixed of { shape : Types.mixed_product_shape; is_mutable : bool}
+  | Tfts_record_float of {num_fields : int; is_mutable : bool}
+  | Tfts_record_ufloat of {num_fields : int; is_mutable : bool}
+  | Tfts_variant_boxed of { sorts : (Types.constructor_representation * Jkind_types.Sort.Const.t array) array}
 
 and free_to =
   | Tfree_to_unbox of free_to_unbox
