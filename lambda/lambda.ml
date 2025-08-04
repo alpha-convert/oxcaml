@@ -1528,6 +1528,20 @@ let rec transl_mixed_product_shape_for_read ~get_value_kind ~get_mode shape =
         (transl_mixed_product_shape_for_read ~get_value_kind ~get_mode shapes)
   ) shape
 
+let rec map_mixed_block_element f = function
+| Value v -> Value v
+| Float_boxed x -> Float_boxed (f x)
+| Float64 -> Float64
+| Float32 -> Float32
+| Bits32 -> Bits32
+| Bits64 -> Bits64
+| Vec128 -> Vec128
+| Vec256 -> Vec256
+| Vec512 -> Vec512
+| Word -> Word
+| Product shapes ->
+  Product (Array.map (map_mixed_block_element f) shapes)
+
 (* Compile a sequence of expressions *)
 
 let rec make_sequence fn = function

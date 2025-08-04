@@ -7235,26 +7235,34 @@ and type_expect_
                           { parent_path = Predef.path_mallocd ;
                             position = 1; arity = 1}))
       in
-      let get_unboxed_version p env =
-          let decl =
-            try Env.find_type p env
-            with Not_found -> unsupported (Decl_not_found p)
-          in
+      let get_decl p =
+          try Env.find_type p env
+          with Not_found -> unsupported (Decl_not_found p)
+        in
+      (* CR jcutler: fold this back in *)
+      let get_record_repr decl =
+        match decl.type_kind with
+        | Type_record(_,r,_) -> Some r
+        | _ -> None
+      in
+      let get_unboxed_version p =
+          let decl = get_decl p in
           (match decl.type_unboxed_version with
           | None -> unsupported (No_unboxed_version inner_ty)
           | Some _ -> ());
-          let tfu = match decl.type_kind with
-          (* CR jcutler: add these to the typing tests *)
-          | Type_record(_,Record_float,_) -> unsupported (No_unboxed_version inner_ty)
-          | Type_record(_,Record_ufloat,_) -> unsupported (No_unboxed_version inner_ty)
-          | Type_record(_,Record_unboxed,_) -> unsupported (Already_unboxed p)
-          (* CR jcutler for ccasinghino: I'm pretty sure this next case is unreachable?
-             since these types don't have names and the inference for free basically requries an
-             annotation somewhere, you can't ever end up with this. *)
-          | Type_record(_,Record_inlined(_,_,_),_) -> unsupported (Inlined_record p)
-          | Type_record(_,Record_mixed shape,_) -> Tftu_record_mixed{shape}
-          | Type_record(_,Record_boxed sorts,_) -> Tftu_record_boxed{sorts}
-          | _ -> unsupported (Has_unboxed_not_supported inner_ty)
+          let tfu =
+            match get_record_repr decl with
+            (* CR jcutler: add these to the typing tests *)
+            | Some Record_float  -> unsupported (No_unboxed_version inner_ty)
+            | Some Record_ufloat -> unsupported (No_unboxed_version inner_ty)
+            | Some Record_unboxed -> unsupported (Already_unboxed p)
+            (* CR jcutler for ccasinghino: I'm pretty sure this next case is unreachable?
+              since these types don't have names and the inference for free basically requries an
+              annotation somewhere, you can't ever end up with this. *)
+            | Some Record_inlined(_,_,_) -> unsupported (Inlined_record p)
+            | Some Record_mixed shape -> Tftu_record_mixed{shape}
+            | Some Record_boxed sorts -> Tftu_record_boxed{sorts}
+            | _ -> unsupported (Has_unboxed_not_supported inner_ty)
           in
           tfu,(Path.unboxed_version p)
       in
@@ -7266,6 +7274,7 @@ and type_expect_
       in
       let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
       let exp_type,free_to =
+        (* CR jcutler: match on the type first, then the free-to. That'll simplify this whole logic quite a bit i think.*)
         match free_to with
         | Pfree_to_unbox ->
           begin match get_expanded_desc env inner_ty with
@@ -7273,26 +7282,43 @@ and type_expect_
               newty (Tunboxed_tuple(args)),
               Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
           | Tconstr(p,args,m) ->
-              let tfu,p_unboxed = get_unboxed_version p env in
+              let tfu,p_unboxed = get_unboxed_version p in
               newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
           | Tvariant _ -> unsupported (No_unboxed_version inner_ty)
           | _ -> unsupported (Unfreeable inner_ty)
           end
         | Pfree_to_stack ->
-            (match get_expanded_desc env inner_ty with
+            let is_mutable lds =
+              List.exists
+                (fun (ld : Types.label_declaration) ->
+                    Types.is_mutable ld.ld_mutable)
+                lds
+            in
+            let fts =
+              match get_expanded_desc env inner_ty with
              | Tconstr(p,_,_) ->
                   let decl = Env.find_type p env in
                   begin match decl.type_kind with
                   | Type_abstract _  -> unsupported (Unfreeable inner_ty)
                   | Type_open | Type_record_unboxed_product _ -> unsupported (Unfreeable inner_ty)
-                  | Type_record _| Type_variant _ -> ()
+                  | Type_record(_,Record_float,_) -> failwith "Unimpl"
+                  | Type_record(_,Record_ufloat,_) -> failwith "Unimpl"
+                  | Type_record(_,Record_unboxed,_) -> failwith "Unimpl"
+                  | Type_record(_,Record_inlined _,_) -> failwith "Unimpl"
+                  | Type_record(lds,Record_boxed sorts,_) ->
+                    Tfts_record_boxed {sorts; is_mutable = is_mutable lds}
+                  | Type_record(lds,Record_mixed shape,_) ->
+                    Tfts_record_mixed {shape; is_mutable = is_mutable lds}
+                  | Type_variant _ -> failwith "Unimpl"
                   end
-             | Ttuple _ | Tvariant _ -> ()
-             | _ -> unsupported (Unfreeable inner_ty));
+             | Ttuple args -> Tfts_tuple({num_fields = List.length args})
+             | Tvariant _ -> failwith "Unimpl"
+             | _ -> unsupported (Unfreeable inner_ty)
+            in
             submode ~loc ~env
               (Value.min_with_comonadic Areality Regionality.local)
               expected_mode;
-            inner_ty, Tfree_to_stack
+            inner_ty, Tfree_to_stack(fts)
       in
       if not (is_principal inner_ty) && !Clflags.principal then begin
         let msg =

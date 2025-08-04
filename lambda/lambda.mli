@@ -1155,6 +1155,8 @@ val transl_mixed_product_shape_for_read :
 val layout_of_mixed_block_shape :
   'a mixed_block_element array -> path:int list -> layout
 
+val map_mixed_block_element : ('a -> 'b) -> 'a mixed_block_element -> 'b mixed_block_element
+
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 
 val subst:

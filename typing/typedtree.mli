@@ -533,9 +533,14 @@ and free_to_unbox =
   | Tftu_record_boxed of { sorts : Jkind_types.Sort.Const.t array }
   | Tftu_record_mixed of { shape : Types.mixed_product_shape }
 
+and free_to_stack =
+  | Tfts_tuple of {num_fields : int}
+  | Tfts_record_boxed of { sorts : Jkind_types.Sort.Const.t array ; is_mutable : bool}
+  | Tfts_record_mixed of { shape : Types.mixed_product_shape ; is_mutable : bool}
+
 and free_to =
   | Tfree_to_unbox of free_to_unbox
-  | Tfree_to_stack
+  | Tfree_to_stack of free_to_stack
 
 and function_curry =
   | More_args of { partial_mode : Mode.Alloc.l }

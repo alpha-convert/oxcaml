@@ -1298,36 +1298,47 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
   | Texp_hole _ ->
       Location.todo_overwrite_not_implemented ~kind:"Translcore" e.exp_loc
-  | Texp_free (e,Tfree_to_unbox(free_to_unbox)) ->
+  | Texp_free (e,free_to) ->
     let l = transl_exp ~scopes sort e in
     let l_cast = Lprim(Preinterpret_word_as_value,[l],of_location ~scopes e.exp_loc) in
     let block_fields n =
       List.init n (fun i ->
           Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
     in
-    let make_free_to_unboxed layouts lams =
-      let unboxed_product = Lprim (Pmake_unboxed_product layouts, lams , of_location ~scopes e.exp_loc) in
+    let make_free ~result_layout ~result_lam =
       let result_id = Ident.create_local "res" in
       let result_duid = Lambda.debug_uid_none in
       let free_op = Lprim (Pfree_external_block, [l], of_location ~scopes e.exp_loc) in
-      Llet (Strict, Lambda.layout_unboxed_product layouts, result_id, result_duid, unboxed_product,
+      Llet (Strict, result_layout, result_id, result_duid, result_lam,
             Lsequence (free_op, Lvar result_id))
     in
-    begin match free_to_unbox with
-    | Tftu_tuple({num_fields}) ->
+    let make_free_to_unboxed layouts lams =
+      let result_lam = Lprim (Pmake_unboxed_product layouts, lams , of_location ~scopes e.exp_loc) in
+      make_free ~result_layout:(Lambda.layout_unboxed_product layouts) ~result_lam
+    in
+    let make_free_to_stack block_shape mut lams =
+      let result_lam = Lprim (Pmakeblock (0,mut,block_shape,Lambda.alloc_local) , lams , of_location ~scopes e.exp_loc) in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    in
+    let make_free_to_stack_mixed block_shape mut lams =
+      let result_lam = Lprim (Pmakemixedblock (0,mut,block_shape,Lambda.alloc_local) , lams , of_location ~scopes e.exp_loc) in
+      make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
+    in
+    begin match free_to with
+    | Tfree_to_unbox(Tftu_tuple({num_fields})) ->
         let layouts =
           List.init num_fields (fun _ -> Lambda.layout_value_field)
         in
         let fields = block_fields num_fields in
         make_free_to_unboxed layouts fields
-    | Tftu_record_boxed({sorts}) ->
+    | Tfree_to_unbox(Tftu_record_boxed({sorts})) ->
           let layouts =
             Array.map Lambda.layout_of_const_sort sorts
             |> Array.to_list
           in
           let fields = block_fields (Array.length sorts) in
           make_free_to_unboxed layouts fields
-    | Tftu_record_mixed({shape}) ->
+    | Tfree_to_unbox(Tftu_record_mixed({shape})) ->
       let lambda_shape =
         Lambda.transl_mixed_product_shape_for_read
           ~get_value_kind:(fun _i -> Lambda.generic_value)
@@ -1343,9 +1354,36 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
           Lambda.layout_of_mixed_block_shape lambda_shape ~path:[i])
       in
       make_free_to_unboxed layouts field_extracts
+    | Tfree_to_stack(Tfts_tuple({num_fields})) ->
+      let block_shape =
+        Some (List.init num_fields (fun _ -> Lambda.generic_value))
+      in
+      let fields = block_fields num_fields in
+      make_free_to_stack block_shape Lambda.Immutable fields
+    | Tfree_to_stack(Tfts_record_boxed({sorts; is_mutable})) ->
+      let layouts =
+        Array.map Lambda.layout_of_const_sort sorts
+        |> Array.to_list
+      in
+      let block_shape = Some (List.map Lambda.must_be_value layouts) in
+      let fields = block_fields (Array.length sorts) in
+      let mutability = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      make_free_to_stack block_shape mutability fields
+    | Tfree_to_stack(Tfts_record_mixed({shape;is_mutable})) ->
+      let lambda_shape_for_read =
+        Lambda.transl_mixed_product_shape_for_read
+          ~get_value_kind:(fun _i -> Lambda.generic_value)
+          ~get_mode:(fun _i -> Lambda.alloc_external)
+          shape
+      in
+      let field_extracts =
+        List.init (Array.length shape) (fun i ->
+            Lprim (Pmixedfield ([i], lambda_shape_for_read, Reads_agree), [l_cast], of_location ~scopes e.exp_loc))
+      in
+      let lambda_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape_for_read in
+      let mutability = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+      make_free_to_stack_mixed lambda_shape mutability field_extracts
     end
-  | Texp_free (e,Tfree_to_stack) ->
-    transl_exp ~scopes sort e
 
 and pure_module m =
   match m.mod_desc with
