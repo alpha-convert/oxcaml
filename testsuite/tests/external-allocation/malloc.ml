@@ -1,5 +1,5 @@
 (* TEST
- modules = "stubs.c";
+ modules = "malloc-stubs.c";
  {
  not-macos;
  flags = "-cclib -Xlinker -cclib --wrap -cclib -Xlinker -cclib caml_alloc_malloc \
