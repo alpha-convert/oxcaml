@@ -1467,7 +1467,8 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       in
       let build_const_chain cases =
         let rec loop = function
-          | [] -> assert false
+          | [] ->
+            Misc.fatal_error "Impossible, expected at least one constructor"
           | [(_, res)] -> res
           | (tag, res) :: rest ->
             let cond = Lprim (Pintcomp Ceq, [l_cast; Lconst (const_int tag)], of_location ~scopes e.exp_loc) in
@@ -1480,7 +1481,8 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
         let block_shape = Some [Lambda.generic_value; Lambda.generic_value] in
         let tag_extract = Lprim (Pfield (0, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
         let rec loop = function
-          | [] -> assert false
+          | [] ->
+            Misc.fatal_error "Impossible, expected at least one constructor"
           | [tag] ->
             make_free_to_stack ~tag:0 block_shape Lambda.Immutable [Lconst (const_int tag); field_value]
           | tag :: rest ->
@@ -1491,7 +1493,7 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
         loop tags
       in
       match const_constructors, nonconst_constructors with
-      | [], [] -> assert false
+      | [], [] -> Misc.fatal_error "Impossible, expected at least one constructor"
       | const_cases, [] -> build_const_chain const_cases
       | [], nonconst_tags -> build_nonconst_chain nonconst_tags
       | const_cases, nonconst_tags ->
