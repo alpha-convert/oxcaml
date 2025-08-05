@@ -1414,7 +1414,39 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
           of_location ~scopes e.exp_loc)
       in
       make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
-    | Tfree_to_stack(Tfts_variant_boxed{sorts = _}) -> Misc.fatal_error "Unimplemetned"
+    | Tfree_to_stack(Tfts_variant_boxed{constructors}) ->
+      let sw_blocks =
+        List.map (fun (runtime_tag, cstr_shape) ->
+          let result_lam =
+            match cstr_shape with
+            | Tfts_constructor_vals num_fields ->
+                let extracts = List.init num_fields (fun i ->
+                  Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+                let block_shape = Some (List.init num_fields (fun _ -> Lambda.generic_value)) in
+                make_free_to_stack block_shape Immutable extracts
+            | Tfts_constructor_mixed shape ->
+                let lambda_shape =
+                  Lambda.transl_mixed_product_shape_for_read
+                    ~get_value_kind:(fun _i -> Lambda.generic_value)
+                    ~get_mode:(fun _i -> Lambda.alloc_external)
+                    shape
+                in
+                let extracts = List.init (Array.length shape) (fun i ->
+                  Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+                let lambda_shape_for_make = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape in
+                make_free_to_stack_mixed lambda_shape_for_make Immutable extracts
+          in
+          (runtime_tag, result_lam))
+        constructors
+      in
+      let sw = {
+        sw_numconsts = 0;
+        sw_consts = [];
+        sw_numblocks = List.length constructors;
+        sw_blocks ;
+        sw_failaction = None;
+      } in
+      Lswitch (l_cast, sw, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value)
     end
 
 and pure_module m =

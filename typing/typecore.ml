@@ -7310,8 +7310,29 @@ and type_expect_
                   returns_locally ();
                   inner_ty, Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
               | Type_variant _, Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
-              | Type_variant (_,Variant_boxed sorts,_), Pfree_to_stack ->
-                inner_ty, Tfree_to_stack(Tfts_variant_boxed{sorts})
+              | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
+                let constructors =
+                  List.map2 (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, field_sorts) ->
+                    let cstr_desc =
+                      Env.find_constructor_by_name
+                        (Longident.Lident (Ident.name cstr_decl.cd_id))
+                        env
+                    in
+                    let runtime_tag = match cstr_desc.cstr_tag with
+                      | Ordinary {runtime_tag} -> runtime_tag
+                      | Null | Extension _ -> Misc.fatal_error ""
+                    in
+                    let shape = match cstr_repr with
+                      | Constructor_uniform_value ->
+                          let num_fields = Array.length field_sorts in
+                          Tfts_constructor_vals num_fields
+                      | Constructor_mixed shape ->
+                          Tfts_constructor_mixed shape
+                    in
+                    runtime_tag, shape)
+                    cstrs (Array.to_list sorts)
+                in
+                inner_ty, Tfree_to_stack(Tfts_variant_boxed{constructors})
               | Type_variant (_,(Variant_unboxed | Variant_with_null),_), Pfree_to_stack ->
                 unsupported (Already_unboxed p)
               | Type_variant (_,Variant_extensible,_), Pfree_to_stack ->
