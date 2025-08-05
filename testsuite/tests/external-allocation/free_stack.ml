@@ -51,6 +51,14 @@ let () =
     let {x;y} = free_stack_ m in
     Printf.printf "%d %d\n" x y)
 
+type t2' = {mutable x : int; mutable y : int}
+let g2' x y = malloc_ {x;y}
+let () =
+  let m = g2' 2 3 in
+  test_with_malloc_tracking "mutable two-element record" (fun () ->
+    let {x;y} = free_stack_ m in
+    Printf.printf "%d %d\n" x y)
+
 type t3 = {x : int; y : int64#}
 let g3 x y = malloc_ {x;y}
 let () =
