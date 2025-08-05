@@ -41,6 +41,7 @@ CAMLextern value caml_alloc_local_reserved(mlsize_t, tag_t, reserved_t);
 
 CAMLexport intnat caml_alloc_malloc_with_reserved(mlsize_t wosize, tag_t tag,
                                                   reserved_t reserved);
+CAMLexport value caml_free_external(intnat x);
 
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
 CAMLextern void caml_adjust_minor_gc_speed (mlsize_t, mlsize_t);
