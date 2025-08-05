@@ -7312,7 +7312,8 @@ and type_expect_
               | Type_variant _, Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
               | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
                 let constructors =
-                  List.map2 (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, field_sorts) ->
+                  List.map2 (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, _) ->
+                    (* CR jcutler: is this right? *)
                     let cstr_desc =
                       Env.find_constructor_by_name
                         (Longident.Lident (Ident.name cstr_decl.cd_id))
@@ -7320,16 +7321,28 @@ and type_expect_
                     in
                     let runtime_tag = match cstr_desc.cstr_tag with
                       | Ordinary {runtime_tag} -> runtime_tag
-                      | Null | Extension _ -> Misc.fatal_error ""
+                      | Null | Extension _ ->
+                        Misc.fatal_error
+                          "Variant representation is incompatible with these\
+                          constructor types."
                     in
                     let shape = match cstr_repr with
                       | Constructor_uniform_value ->
-                          let num_fields = Array.length field_sorts in
-                          Tfts_constructor_vals num_fields
+                          (match cstr_decl.cd_args with
+                           | Cstr_tuple args ->
+                               let sorts = List.map (fun ca -> ca.ca_sort) args in
+                               Tfts_constructor_vals { sorts }
+                           | Cstr_record lds ->
+                               let sorts = List.map (fun ld -> ld.ld_sort) lds in
+                               Tfts_constructor_vals { sorts })
                       | Constructor_mixed shape ->
                           Tfts_constructor_mixed shape
                     in
-                    runtime_tag, shape)
+                    let is_mutable = match cstr_decl.cd_args with
+                      | Cstr_tuple _ -> false
+                      | Cstr_record lds -> is_mutable lds
+                    in
+                    runtime_tag, shape, is_mutable)
                     cstrs (Array.to_list sorts)
                 in
                 inner_ty, Tfree_to_stack(Tfts_variant_boxed{constructors})

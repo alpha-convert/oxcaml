@@ -539,10 +539,10 @@ and free_to_stack =
   | Tfts_record_mixed of { shape : Types.mixed_product_shape ; is_mutable : bool}
   | Tfts_record_float of {num_fields : int ; is_mutable : bool}
   | Tfts_record_ufloat of {num_fields : int ; is_mutable : bool}
-  | Tfts_variant_boxed of { constructors : (int * free_to_stack_constructor_shape) list}
+  | Tfts_variant_boxed of { constructors : (int * free_to_stack_constructor_shape * bool) list}
 
 and free_to_stack_constructor_shape =
-  | Tfts_constructor_vals of int
+  | Tfts_constructor_vals of { sorts : Jkind_types.Sort.Const.t list }
   | Tfts_constructor_mixed of Types.mixed_product_shape
 
 and free_to =
