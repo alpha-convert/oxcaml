@@ -363,3 +363,36 @@ variant with nullary and mutable record, Second case: free was called
 Third 42
 variant with nullary and mutable record, Third case: free was called
 
+Foo 42
+single polymorphic variant constructor: free was called
+
+Foo 42
+two polymorphic variant constructors, Foo case: free was called
+
+Bar z
+two polymorphic variant constructors, Bar case: free was called
+
+Red 10
+three polymorphic variant constructors, Red case: free was called
+
+Green g
+three polymorphic variant constructors, Green case: free was called
+
+Blue 3.140000
+three polymorphic variant constructors, Blue case: free was called
+
+One 1
+five same-type polymorphic variants, One case: free was called
+
+Two 2
+five same-type polymorphic variants, Two case: free was called
+
+Three 3
+five same-type polymorphic variants, Three case: free was called
+
+Four 4
+five same-type polymorphic variants, Four case: free was called
+
+Five 5
+five same-type polymorphic variants, Five case: free was called
+

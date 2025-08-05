@@ -8,7 +8,7 @@
 module Int64_u = Stdlib_upstream_compatible.Int64_u
 module Float_u = Stdlib_upstream_compatible.Float_u
 
-external globalize_float : float @ local -> float = "%obj_dup"
+external globalize : 'a @ local -> 'a = "%obj_dup"
 
 external free_was_called : unit -> bool = "free_was_called" "free_was_called"
 external called_free_reset : unit -> unit = "called_free_reset" "called_free_reset"
@@ -89,7 +89,7 @@ let () =
   let m = g6 1.0 2.0 3.0 in
   test_with_malloc_tracking "float record" (fun () ->
     let {x;y;z} = free_stack_ m in
-    Printf.printf "%f %f %f\n" (globalize_float x) (globalize_float y) (globalize_float z))
+    Printf.printf "%f %f %f\n" (globalize x) (globalize y) (globalize z))
 
 type t7 = {x : float#; y : float#; z : float#}
 let g7 x y z = malloc_ {x;y;z}
@@ -108,7 +108,7 @@ let () =
   let m = g8 1 'x' 2.5 #42L in
   test_with_malloc_tracking "four-field mixed record" (fun () ->
     let {a;b;c;d} = free_stack_ m in
-    Printf.printf "%d %c %f %Ld\n" a b (globalize_float c) (Int64_u.to_int64 d))
+    Printf.printf "%d %c %f %Ld\n" a b (globalize c) (Int64_u.to_int64 d))
 
 type t9 = {w : float#; x : int; y : char; z : int64#}
 let g9 w x y z = malloc_ {w;x;y;z}
@@ -132,7 +132,7 @@ let () =
   let m = g11 10 1.5 'z' in
   test_with_malloc_tracking "three-field mixed mutable record" (fun () ->
     let {ma;mb;mc} = free_stack_ m in
-    Printf.printf "%d %f %c\n" ma (globalize_float mb) mc)
+    Printf.printf "%d %f %c\n" ma (globalize mb) mc)
 
 type t12 = {fa : float#; fb : float#; fc : float#; fd : float#}
 let g12 fa fb fc fd = malloc_ {fa;fb;fc;fd}
@@ -190,7 +190,7 @@ let () =
   let m = gv6 1.0 2.0 in
   test_with_malloc_tracking "single constructor float record" (fun () ->
     match free_stack_ m with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y))
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y))
 
 type v7 = Foo of {x : float#; y : float#}
 let gv7 x y = malloc_ (Foo {x;y})
@@ -270,11 +270,11 @@ let () =
   let m2 = gv12b 'c' in
   test_with_malloc_tracking "two constructors float record/char, Foo case" (fun () ->
     match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar x -> Printf.printf "Bar %c\n" x);
   test_with_malloc_tracking "two constructors float record/char, Bar case" (fun () ->
     match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar x -> Printf.printf "Bar %c\n" x)
 
 type v13 = Foo of {x : float#; y : float#} | Bar of char
@@ -362,11 +362,11 @@ let () =
   let m2 = gv18b 3 4 in
   test_with_malloc_tracking "two constructors float/regular records, Foo case" (fun () ->
     match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar {x;y} -> Printf.printf "Bar %d %d\n" x y);
   test_with_malloc_tracking "two constructors float/regular records, Bar case" (fun () ->
     match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar {x;y} -> Printf.printf "Bar %d %d\n" x y)
 
 type v19 = Foo of {x : float#; y : float#} | Bar of {x : int; y : int}
@@ -454,11 +454,11 @@ let () =
   let m2 = gv24b 3 #4L in
   test_with_malloc_tracking "two constructors float/mixed records, Foo case" (fun () ->
     match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar {x;y} -> Printf.printf "Bar %d %Ld\n" x (Int64_u.to_int64 y));
   test_with_malloc_tracking "two constructors float/mixed records, Bar case" (fun () ->
     match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y)
+    | Foo {x;y} -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y)
     | Bar {x;y} -> Printf.printf "Bar %d %Ld\n" x (Int64_u.to_int64 y))
 
 type v25 = Foo of {x : float#; y : float#} | Bar of {x : int; y : int64#}
@@ -541,7 +541,7 @@ let () =
   let m = g32 1.0 2.0 in
   test_with_malloc_tracking "single constructor tuple float*float" (fun () ->
     match free_stack_ m with
-    | Foo (x, y) -> Printf.printf "Foo %f %f\n" (globalize_float x) (globalize_float y))
+    | Foo (x, y) -> Printf.printf "Foo %f %f\n" (globalize x) (globalize y))
 
 type t33 = Foo of float# * float#
 let g33 x y = malloc_ (Foo (x, y))
@@ -565,7 +565,7 @@ let () =
   let m = g33c 1.0 2 in
   test_with_malloc_tracking "single constructor tuple float*int" (fun () ->
     match free_stack_ m with
-    | Foo (x, y) -> Printf.printf "Foo %f %d\n" (globalize_float x) y)
+    | Foo (x, y) -> Printf.printf "Foo %f %d\n" (globalize x) y)
 
 type t33d = Foo of float# * int
 let g33d x y = malloc_ (Foo (x, y))
@@ -589,7 +589,7 @@ let () =
   let m = g34 42 'a' 3.14 in
   test_with_malloc_tracking "single constructor tuple int*char*float" (fun () ->
     match free_stack_ m with
-    | Foo (x, y, z) -> Printf.printf "Foo %d %c %f\n" x y (globalize_float z))
+    | Foo (x, y, z) -> Printf.printf "Foo %d %c %f\n" x y (globalize z))
 
 (* Tuple constructor variants - two constructors *)
 
@@ -629,7 +629,7 @@ let g37b x y = malloc_ (Bar (x, y))
 
 let print_t37 = function
   | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-  | Bar (x, y) -> Printf.printf "Bar %c %f\n" x (globalize_float y)
+  | Bar (x, y) -> Printf.printf "Bar %c %f\n" x (globalize y)
 let () =
   let m1 = g37a 1 #2L in
   let m2 = g37b 'a' 3.14 in
@@ -690,11 +690,11 @@ let () =
   test_with_malloc_tracking "two tuple constructors int64#*int vs float*float#, Foo case" (fun () ->
     match free_stack_ m1 with
     | Foo (x, y) -> Printf.printf "Foo %Ld %d\n" (Int64_u.to_int64 x) y
-    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (globalize_float x) (Float_u.to_float y));
+    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (globalize x) (Float_u.to_float y));
   test_with_malloc_tracking "two tuple constructors int64#*int vs float*float#, Bar case" (fun () ->
     match free_stack_ m2 with
     | Foo (x, y) -> Printf.printf "Foo %Ld %d\n" (Int64_u.to_int64 x) y
-    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (globalize_float x) (Float_u.to_float y))
+    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (globalize x) (Float_u.to_float y))
 
 type t38e = Foo of float# * int64# | Bar of int * char
 let g38ea x y = malloc_ (Foo (x, y))
@@ -752,11 +752,11 @@ let () =
   test_with_malloc_tracking "mixed tuple vs mixed record constructors, Foo case" (fun () ->
     match free_stack_ m1 with
     | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar {x; y} -> Printf.printf "Bar %f %f\n" (globalize_float x) (Float_u.to_float y));
+    | Bar {x; y} -> Printf.printf "Bar %f %f\n" (globalize x) (Float_u.to_float y));
   test_with_malloc_tracking "mixed tuple vs mixed record constructors, Bar case" (fun () ->
     match free_stack_ m2 with
     | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar {x; y} -> Printf.printf "Bar %f %f\n" (globalize_float x) (Float_u.to_float y))
+    | Bar {x; y} -> Printf.printf "Bar %f %f\n" (globalize x) (Float_u.to_float y))
 
 (* Multi-constructor variants - 4 constructors *)
 
@@ -769,7 +769,7 @@ let g42d x = malloc_ (D x)
 let print_t42 = function
   | A x -> Printf.printf "A %d\n" x
   | B x -> Printf.printf "B %c\n" x
-  | C x -> Printf.printf "C %f\n" (globalize_float x)
+  | C x -> Printf.printf "C %f\n" (globalize x)
   | D x -> Printf.printf "D %Ld\n" (Int64_u.to_int64 x)
 let () =
   let m1 = g42a 1 in
@@ -793,7 +793,7 @@ let g43d x = malloc_ (Yellow x)
 
 let print_t43 = function
   | Red (x, y) -> Printf.printf "Red %d %c\n" x y
-  | Green {x; y} -> Printf.printf "Green %d %f\n" x (globalize_float y)
+  | Green {x; y} -> Printf.printf "Green %d %f\n" x (globalize y)
   | Blue (x, y) -> Printf.printf "Blue %f %Ld\n" (Float_u.to_float x) (Int64_u.to_int64 y)
   | Yellow x -> Printf.printf "Yellow %d\n" x
 let () =
@@ -851,7 +851,7 @@ let g45e a b = malloc_ (Epsilon {a; b})
 
 let print_t45 = function
   | Alpha {x; y} -> Printf.printf "Alpha %d %c\n" x y
-  | Beta (x, y) -> Printf.printf "Beta %f %f\n" (globalize_float x) (Float_u.to_float y)
+  | Beta (x, y) -> Printf.printf "Beta %f %f\n" (globalize x) (Float_u.to_float y)
   | Gamma (x, y, z) -> Printf.printf "Gamma %Ld %d %c\n" (Int64_u.to_int64 x) y z
   | Delta x -> Printf.printf "Delta %d\n" x
   | Epsilon {a; b} -> Printf.printf "Epsilon %d %f\n" a (Float_u.to_float b)
@@ -930,7 +930,7 @@ let gnull4 x y = malloc_ (Middle {x; y})
 
 let print_nullary4 = function
   | Start -> Printf.printf "Start\n"
-  | Middle {x; y} -> Printf.printf "Middle %d %f\n" x (globalize_float y)
+  | Middle {x; y} -> Printf.printf "Middle %d %f\n" x (globalize y)
   | End -> Printf.printf "End\n"
 
 let () =
@@ -971,3 +971,83 @@ let () =
     print_nullary6 (free_stack_ m1));
   test_with_malloc_tracking "variant with nullary and mutable record, Third case" (fun () ->
     print_nullary6 (free_stack_ m2))
+
+(* Polymorphic variants *)
+
+type pv1 = [`Foo of int]
+let gpv1 x = malloc_ (`Foo x)
+let () =
+  let m = gpv1 42 in
+  test_with_malloc_tracking "single polymorphic variant constructor" (fun () ->
+    match free_stack_ m with
+    | `Foo x -> Printf.printf "Foo %d\n" (globalize x))
+
+type pv2 = [`Foo of int | `Bar of char]
+let gpv2a x = malloc_ (`Foo x)
+let gpv2b x = malloc_ (`Bar x)
+let () =
+  let m1 = gpv2a 42 in
+  let m2 = gpv2b 'z' in
+  test_with_malloc_tracking "two polymorphic variant constructors, Foo case" (fun () ->
+    match free_stack_ m1 with
+    | `Foo x -> Printf.printf "Foo %d\n" (globalize x) ;
+    | `Bar x -> Printf.printf "Bar %c\n" (globalize x););
+  test_with_malloc_tracking "two polymorphic variant constructors, Bar case" (fun () ->
+    match free_stack_ m2 with
+    | `Foo x -> Printf.printf "Foo %d\n" (globalize x)
+    | `Bar x -> Printf.printf "Bar %c\n" (globalize x))
+
+type pv3 = [`Red of int | `Green of char | `Blue of float]
+let gpv3a x = malloc_ (`Red x)
+let gpv3b x = malloc_ (`Green x)
+let gpv3c x = malloc_ (`Blue x)
+let () =
+  let m1 = gpv3a 10 in
+  let m2 = gpv3b 'g' in
+  let m3 = gpv3c 3.14 in
+  test_with_malloc_tracking "three polymorphic variant constructors, Red case" (fun () ->
+    match free_stack_ m1 with
+    | `Red x -> Printf.printf "Red %d\n" (globalize x)
+    | `Green x -> Printf.printf "Green %c\n" (globalize x)
+    | `Blue x -> Printf.printf "Blue %f\n" (globalize x));
+  test_with_malloc_tracking "three polymorphic variant constructors, Green case" (fun () ->
+    match free_stack_ m2 with
+    | `Red x -> Printf.printf "Red %d\n" (globalize x)
+    | `Green x -> Printf.printf "Green %c\n" (globalize x)
+    | `Blue x -> Printf.printf "Blue %f\n" (globalize x));
+  test_with_malloc_tracking "three polymorphic variant constructors, Blue case" (fun () ->
+    match free_stack_ m3 with
+    | `Red x -> Printf.printf "Red %d\n" (globalize x)
+    | `Green x -> Printf.printf "Green %c\n" (globalize x)
+    | `Blue x -> Printf.printf "Blue %f\n" (globalize x))
+
+type pv7 = [`One of int | `Two of int | `Three of int | `Four of int | `Five of int]
+let gpv7a x = malloc_ (`One x)
+let gpv7b x = malloc_ (`Two x)
+let gpv7c x = malloc_ (`Three x)
+let gpv7d x = malloc_ (`Four x)
+let gpv7e x = malloc_ (`Five x)
+let print_v7 (x @ local) =
+  match x with
+  | `One (x : int) -> Printf.printf "One %d\n" x
+  | `Two (x : int) -> Printf.printf "Two %d\n" x
+  | `Three (x : int) -> Printf.printf "Three %d\n" x
+  | `Four (x : int) -> Printf.printf "Four %d\n" x
+  | `Five (x : int) -> Printf.printf "Five %d\n" x
+
+let () =
+  let m1 = gpv7a 1 in
+  let m2 = gpv7b 2 in
+  let m3 = gpv7c 3 in
+  let m4 = gpv7d 4 in
+  let m5 = gpv7e 5 in
+  test_with_malloc_tracking "five same-type polymorphic variants, One case" (fun () ->
+    print_v7 (free_stack_ m1); ());
+  test_with_malloc_tracking "five same-type polymorphic variants, Two case" (fun () ->
+    print_v7 (free_stack_ m2); ());
+  test_with_malloc_tracking "five same-type polymorphic variants, Three case" (fun () ->
+    print_v7 (free_stack_ m3); ());
+  test_with_malloc_tracking "five same-type polymorphic variants, Four case" (fun () ->
+    print_v7 (free_stack_ m4); ());
+  test_with_malloc_tracking "five same-type polymorphic variants, Five case" (fun () ->
+    print_v7 (free_stack_ m5); ());
