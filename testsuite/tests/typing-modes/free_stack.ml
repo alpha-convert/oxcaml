@@ -350,36 +350,30 @@ type t = Foo of int
 let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect {|
 type t = Foo of int
->> Fatal error: Unimplemetned
-Uncaught exception: Misc.Fatal_error
-
+val f : t mallocd @ unique -> local_ t = <fun>
 |}, Principal{|
 type t = Foo of int
 Line 2, characters 33-48:
 2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
                                      ^^^^^^^^^^^^^^^
 Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
->> Fatal error: Unimplemetned
-Uncaught exception: Misc.Fatal_error
 
+val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 type t = Foo of int | Bar of char
 let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect {|
 type t = Foo of int | Bar of char
->> Fatal error: Unimplemetned
-Uncaught exception: Misc.Fatal_error
-
+val f : t mallocd @ unique -> local_ t = <fun>
 |}, Principal{|
 type t = Foo of int | Bar of char
 Line 2, characters 33-48:
 2 | let f (x : t mallocd) = exclave_ (free_stack_ x)
                                      ^^^^^^^^^^^^^^^
 Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
->> Fatal error: Unimplemetned
-Uncaught exception: Misc.Fatal_error
 
+val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 (* GADTs work the same as variants *)
@@ -404,20 +398,20 @@ Error: Type "t" does not have an unboxed version, try free_stack_
 |}]
 
 (* Can free anonymous variants *)
-let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x) 
+let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 Uncaught exception: Failure("Unimpl")
 
 |}]
 
-let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x) 
+let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 Uncaught exception: Failure("Unimpl")
 
 |}]
 
 type t = [`Foo of int]
-let f (x : t mallocd) = exclave_ (free_stack_ x) 
+let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 type t = [ `Foo of int ]
 Uncaught exception: Failure("Unimpl")
@@ -425,7 +419,7 @@ Uncaught exception: Failure("Unimpl")
 |}]
 
 type t = [`Foo of int | `Bar of int * int]
-let f (x : t mallocd) = exclave_ (free_stack_ x) 
+let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 type t = [ `Bar of int * int | `Foo of int ]
 Uncaught exception: Failure("Unimpl")
@@ -468,26 +462,22 @@ Line 2, characters 24-25:
 Error: Cannot free values of type "int"
 |}]
 
-let f (t : (int -> int) mallocd) = free_ t
+let f (t : (int -> int) mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 41-42:
-1 | let f (t : (int -> int) mallocd) = free_ t
-                                             ^
+Line 1, characters 57-58:
+1 | let f (t : (int -> int) mallocd) = exclave_ (free_stack_ t)
+                                                             ^
 Error: Cannot free values of type "int -> int"
 |}]
 
-let f (t : < get : int > mallocd) = free_ t
+let f (t : < get : int > mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 42-43:
-1 | let f (t : < get : int > mallocd) = free_ t
-                                              ^
+Line 1, characters 58-59:
+1 | let f (t : < get : int > mallocd) = exclave_ (free_stack_ t)
+                                                              ^
 Error: Cannot free values of type "< get : int >"
 |}]
 
-let f (t : [`Foo of int | `Bar of char] mallocd) = free_ t
+let f (t : [`Foo of int | `Bar of char] mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 57-58:
-1 | let f (t : [`Foo of int | `Bar of char] mallocd) = free_ t
-                                                             ^
-Error: Type "[ `Bar of char | `Foo of int ]" does not have an unboxed version, try free_stack_
 |}]

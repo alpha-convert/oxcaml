@@ -7238,10 +7238,12 @@ and type_expect_
           try Env.find_type p env
           with Not_found -> unsupported (Decl_not_found p)
         in
+      let has_unboxed_version decl =
+        Option.is_some decl.type_unboxed_version
+      in
       let get_unboxed_version p decl =
-        if Option.is_none decl.type_unboxed_version
-          then unsupported (No_unboxed_version inner_ty)
-          else Path.unboxed_version p
+        if not (has_unboxed_version decl) then unsupported (No_unboxed_version inner_ty)
+        else Path.unboxed_version p
       in
       let mallocd_ty = Predef.type_mallocd inner_ty in
       let expected_mode =

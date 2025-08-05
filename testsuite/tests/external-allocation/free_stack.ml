@@ -254,47 +254,47 @@ let () =
 type v9 = Foo of {x : int; y : int} | Bar of char
 let gv9a x y = malloc_ (Foo {x;y})
 let gv9b x = malloc_ (Bar x)
+
+let print_v9 = function
+  | Foo {x;y} -> Printf.printf "Foo %d %d\n" x y
+  | Bar x -> Printf.printf "Bar %c\n" x
 let () =
   let m1 = gv9a 1 2 in
   let m2 = gv9b 'c' in
   test_with_malloc_tracking "two constructors record/char, Foo case" (fun () ->
-    match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %d %d\n" x y
-    | Bar x -> Printf.printf "Bar %c\n" x);
+    print_v9 (free_stack_ m1));
   test_with_malloc_tracking "two constructors record/char, Bar case" (fun () ->
-    match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %d %d\n" x y
-    | Bar x -> Printf.printf "Bar %c\n" x)
+    print_v9 (free_stack_ m2))
 
 type v10 = Foo of {x : int; y : int64#} | Bar of char
 let gv10a x y = malloc_ (Foo {x;y})
 let gv10b x = malloc_ (Bar x)
+
+let print_v10 = function
+  | Foo {x;y} -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
+  | Bar x -> Printf.printf "Bar %c\n" x
 let () =
   let m1 = gv10a 1 #2L in
   let m2 = gv10b 'c' in
   test_with_malloc_tracking "two constructors mixed record/char, Foo case" (fun () ->
-    match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar x -> Printf.printf "Bar %c\n" x);
+    print_v10 (free_stack_ m1));
   test_with_malloc_tracking "two constructors mixed record/char, Bar case" (fun () ->
-    match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar x -> Printf.printf "Bar %c\n" x)
+    print_v10 (free_stack_ m2))
 
 type v11 = Foo of {x : int64#; y : int64#} | Bar of char
 let gv11a x y = malloc_ (Foo {x;y})
 let gv11b x = malloc_ (Bar x)
+
+let print_v11 = function
+  | Foo {x;y} -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
+  | Bar x -> Printf.printf "Bar %c\n" x
 let () =
   let m1 = gv11a #1L #2L in
   let m2 = gv11b 'c' in
   test_with_malloc_tracking "two constructors unboxed record/char, Foo case" (fun () ->
-    match free_stack_ m1 with
-    | Foo {x;y} -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
-    | Bar x -> Printf.printf "Bar %c\n" x);
+    print_v11 (free_stack_ m1));
   test_with_malloc_tracking "two constructors unboxed record/char, Bar case" (fun () ->
-    match free_stack_ m2 with
-    | Foo {x;y} -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
-    | Bar x -> Printf.printf "Bar %c\n" x)
+    print_v11 (free_stack_ m2))
 
 type v12 = Foo of {x : float; y : float} | Bar of char
 let gv12a x y = malloc_ (Foo {x;y})
@@ -660,32 +660,32 @@ let () =
 type t37 = Foo of int * int64# | Bar of char * float
 let g37a x y = malloc_ (Foo (x, y))
 let g37b x y = malloc_ (Bar (x, y))
+
+let print_t37 = function
+  | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
+  | Bar (x, y) -> Printf.printf "Bar %c %f\n" x (globalize_float y)
 let () =
   let m1 = g37a 1 #2L in
   let m2 = g37b 'a' 3.14 in
   test_with_malloc_tracking "two tuple constructors mixed types, Foo case" (fun () ->
-    match free_stack_ m1 with
-    | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar (x, y) -> Printf.printf "Bar %c %f\n" x (globalize_float y));
+    print_t37 (free_stack_ m1));
   test_with_malloc_tracking "two tuple constructors mixed types, Bar case" (fun () ->
-    match free_stack_ m2 with
-    | Foo (x, y) -> Printf.printf "Foo %d %Ld\n" x (Int64_u.to_int64 y)
-    | Bar (x, y) -> Printf.printf "Bar %c %f\n" x (globalize_float y))
+    print_t37 (free_stack_ m2))
 
 type t38 = Foo of int64# * int64# | Bar of float# * float#
 let g38a x y = malloc_ (Foo (x, y))
 let g38b x y = malloc_ (Bar (x, y))
+
+let print_t38 = function
+  | Foo (x, y) -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
+  | Bar (x, y) -> Printf.printf "Bar %f %f\n" (Float_u.to_float x) (Float_u.to_float y)
 let () =
   let m1 = g38a #1L #2L in
   let m2 = g38b #1.0 #2.0 in
   test_with_malloc_tracking "two tuple constructors unboxed types, Foo case" (fun () ->
-    match free_stack_ m1 with
-    | Foo (x, y) -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
-    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (Float_u.to_float x) (Float_u.to_float y));
+    print_t38 (free_stack_ m1));
   test_with_malloc_tracking "two tuple constructors unboxed types, Bar case" (fun () ->
-    match free_stack_ m2 with
-    | Foo (x, y) -> Printf.printf "Foo %Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y)
-    | Bar (x, y) -> Printf.printf "Bar %f %f\n" (Float_u.to_float x) (Float_u.to_float y))
+    print_t38 (free_stack_ m2))
 
 (* Single value constructor variants *)
 
