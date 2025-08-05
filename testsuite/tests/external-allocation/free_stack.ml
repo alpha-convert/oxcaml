@@ -8,6 +8,8 @@
 module Int64_u = Stdlib_upstream_compatible.Int64_u
 module Float_u = Stdlib_upstream_compatible.Float_u
 
+external globalize_float : float @ local -> float = "%obj_dup"
+
 external free_was_called : unit -> bool = "free_was_called" "free_was_called"
 external called_free_reset : unit -> unit = "called_free_reset" "called_free_reset"
 
@@ -73,16 +75,13 @@ let () =
     let {x;y} = free_stack_ m in
     Printf.printf "%Ld %Ld\n" (Int64_u.to_int64 x) (Int64_u.to_int64 y))
 
-(* type t6 = {x : float; y : float; z : float}
+type t6 = {x : float; y : float; z : float}
 let g6 x y z = malloc_ {x;y;z}
 let () =
   let m = g6 1.0 2.0 3.0 in
   test_with_malloc_tracking "float record" (fun () ->
     let {x;y;z} = free_stack_ m in
-    print_float x;
-    print_float y;
-    print_float z;
-    ()) *)
+    Printf.printf "%f %f %f\n" (globalize_float x) (globalize_float y) (globalize_float z))
 
 type t7 = {x : float#; y : float#; z : float#}
 let g7 x y z = malloc_ {x;y;z}
