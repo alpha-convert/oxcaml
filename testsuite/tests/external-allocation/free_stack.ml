@@ -142,40 +142,6 @@ let () =
     let {fa;fb;fc;fd} = free_stack_ m in
     Printf.printf "%f %f %f %f\n" (Float_u.to_float fa) (Float_u.to_float fb) (Float_u.to_float fc) (Float_u.to_float fd))
 
-(*
-Foo of int
-Foo of {x : int; y : int}
-Foo of {x : int; y : int64#}
-Foo of {x : int64#; y : int64#}
-Foo of {x : int64#; y : int}
-Foo of {x : float; y : float}
-Foo of {x : float#; y : float#}
-
-Foo of int | Bar of char
-Foo of {x : int; y : int} | Bar of char
-Foo of {x : int; y : int64#} | Bar of char
-Foo of {x : int64#; y : int64#} | Bar of char
-Foo of {x : float; y : float} | Bar of char
-Foo of {x : float#; y : float#} | Bar of char
-
-Foo of int | Bar of {x : int; y : int}
-Foo of {x : int; y : int} | Bar of {x : int; y : int}
-Foo of {x : int; y : int64#} | Bar of {x : int; y : int}
-Foo of {x : int64#; y : int64#} | Bar of {x : int; y : int}
-Foo of {x : float; y : float} | Bar of {x : int; y : int}
-Foo of {x : float#; y : float#} | Bar of {x : int; y : int}
-
-Foo of int | Bar of {x : int; y : int64#}
-Foo of {x : int; y : int} | Bar of {x : int; y : int64#}
-Foo of {x : int; y : int64#} | Bar of {x : int; y : int64#}
-Foo of {x : int64#; y : int64#} | Bar of {x : int; y : int64#}
-Foo of {x : float; y : float} | Bar of {x : int; y : int64#}
-Foo of {x : float#; y : float#} | Bar of {x : int; y : int64#}
-
-
-*)
-
-
 (* Single constructor variants *)
 
 type v1 = Foo of int
