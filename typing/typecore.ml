@@ -7372,9 +7372,7 @@ and type_expect_
                   (Tfts_poly_variant_const {tag})
                 | Rpresent (Some _) ->
                   (Tfts_poly_variant_val {tag})
-                | Rabsent | Reither _ ->
-                  failwith "Unimpl"
-                  )
+                | Rabsent | Reither _ -> unsupported (Unfreeable inner_ty))
                 fields
             in
             inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
