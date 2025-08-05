@@ -7319,14 +7319,16 @@ and type_expect_
                         (Longident.Lident (Ident.name cstr_decl.cd_id))
                         env
                     in
-                    let runtime_tag = match cstr_desc.cstr_tag with
+                    let tag = match cstr_desc.cstr_tag with
                       | Ordinary {runtime_tag} -> runtime_tag
                       | Null | Extension _ ->
                         Misc.fatal_error
                           "Variant representation is incompatible with these\
                           constructor types."
                     in
-                    let shape = match cstr_repr with
+                    let shape =
+                      match cstr_repr with
+                      | _  when cstr_desc.cstr_constant -> Tfts_constructor_const {tag}
                       | Constructor_uniform_value ->
                           (match cstr_decl.cd_args with
                            | Cstr_tuple args ->
@@ -7342,7 +7344,7 @@ and type_expect_
                       | Cstr_tuple _ -> false
                       | Cstr_record lds -> is_mutable lds
                     in
-                    runtime_tag, shape, is_mutable)
+                    tag, shape, is_mutable)
                     cstrs (Array.to_list sorts)
                 in
                 inner_ty, Tfree_to_stack(Tfts_variant_boxed{constructors})
@@ -7375,8 +7377,8 @@ and type_expect_
       unify_exp_types loc env exp_type ty_expected;
       let exp_desc = Texp_free(exp,free_to) in
       re {
-        exp_desc = exp_desc;
-        exp_type = exp_type;
+        exp_desc;
+        exp_type;
         exp_loc = loc;
         exp_extra = [];
         exp_attributes = sexp.pexp_attributes;

@@ -905,3 +905,103 @@ let () =
     print_t45 (free_stack_ m4));
   test_with_malloc_tracking "five constructors complex, Epsilon case" (fun () ->
     print_t45 (free_stack_ m5))
+
+(* Variants with nullary constructors mixed with non-nullary constructors *)
+
+type nullary1 = Foo of int | Bar | Baz of char
+let gnull1a x = malloc_ (Foo x)
+let gnull1c x = malloc_ (Baz x)
+
+let print_nullary1 = function
+  | Foo x -> Printf.printf "Foo %d\n" x
+  | Bar -> Printf.printf "Bar\n"
+  | Baz x -> Printf.printf "Baz %c\n" x
+
+let () =
+  let m1 = gnull1a 42 in
+  let m2 = gnull1c 'z' in
+  test_with_malloc_tracking "variant with nullary constructor, Foo case" (fun () ->
+    print_nullary1 (free_stack_ m1));
+  test_with_malloc_tracking "variant with nullary constructor, Baz case" (fun () ->
+    print_nullary1 (free_stack_ m2))
+
+type nullary2 = None | Some of int * char
+let gnull2 x y = malloc_ (Some (x, y))
+
+let print_nullary2 = function
+  | None -> Printf.printf "None\n"
+  | Some (x, y) -> Printf.printf "Some %d %c\n" x y
+
+let () =
+  let m = gnull2 1 'a' in
+  test_with_malloc_tracking "option-like variant with nullary None" (fun () ->
+    print_nullary2 (free_stack_ m))
+
+type nullary3 = Empty | Single of int | Pair of int * int | Triple of int * int * int
+let gnull3a x = malloc_ (Single x)
+let gnull3b x y = malloc_ (Pair (x, y))
+let gnull3c x y z = malloc_ (Triple (x, y, z))
+
+let print_nullary3 = function
+  | Empty -> Printf.printf "Empty\n"
+  | Single x -> Printf.printf "Single %d\n" x
+  | Pair (x, y) -> Printf.printf "Pair %d %d\n" x y
+  | Triple (x, y, z) -> Printf.printf "Triple %d %d %d\n" x y z
+
+let () =
+  let m1 = gnull3a 10 in
+  let m2 = gnull3b 20 30 in
+  let m3 = gnull3c 40 50 60 in
+  test_with_malloc_tracking "multi-constructor with nullary, Single case" (fun () ->
+    print_nullary3 (free_stack_ m1));
+  test_with_malloc_tracking "multi-constructor with nullary, Pair case" (fun () ->
+    print_nullary3 (free_stack_ m2));
+  test_with_malloc_tracking "multi-constructor with nullary, Triple case" (fun () ->
+    print_nullary3 (free_stack_ m3))
+
+type nullary4 = Start | Middle of {x : int; y : float} | End
+let gnull4 x y = malloc_ (Middle {x; y})
+
+let print_nullary4 = function
+  | Start -> Printf.printf "Start\n"
+  | Middle {x; y} -> Printf.printf "Middle %d %f\n" x (globalize_float y)
+  | End -> Printf.printf "End\n"
+
+let () =
+  let m = gnull4 5 3.14 in
+  test_with_malloc_tracking "variant with nullary constructors and record" (fun () ->
+    print_nullary4 (free_stack_ m))
+
+type nullary5 = Zero | One of int64# | Two of float# * float#
+let gnull5a x = malloc_ (One x)
+let gnull5b x y = malloc_ (Two (x, y))
+
+let print_nullary5 = function
+  | Zero -> Printf.printf "Zero\n"
+  | One x -> Printf.printf "One %Ld\n" (Int64_u.to_int64 x)
+  | Two (x, y) -> Printf.printf "Two %f %f\n" (Float_u.to_float x) (Float_u.to_float y)
+
+let () =
+  let m1 = gnull5a #100L in
+  let m2 = gnull5b #1.5 #2.5 in
+  test_with_malloc_tracking "variant with nullary and unboxed types, One case" (fun () ->
+    print_nullary5 (free_stack_ m1));
+  test_with_malloc_tracking "variant with nullary and unboxed types, Two case" (fun () ->
+    print_nullary5 (free_stack_ m2))
+
+type nullary6 = First | Second of {mutable a : int; b : char} | Third of int
+let gnull6a a b = malloc_ (Second {a; b})
+let gnull6b x = malloc_ (Third x)
+
+let print_nullary6 = function
+  | First -> Printf.printf "First\n"
+  | Second {a; b} -> Printf.printf "Second %d %c\n" a b
+  | Third x -> Printf.printf "Third %d\n" x
+
+let () =
+  let m1 = gnull6a 7 'x' in
+  let m2 = gnull6b 42 in
+  test_with_malloc_tracking "variant with nullary and mutable record, Second case" (fun () ->
+    print_nullary6 (free_stack_ m1));
+  test_with_malloc_tracking "variant with nullary and mutable record, Third case" (fun () ->
+    print_nullary6 (free_stack_ m2))

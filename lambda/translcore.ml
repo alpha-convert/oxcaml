@@ -1415,39 +1415,42 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       in
       make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
     | Tfree_to_stack(Tfts_variant_boxed{constructors}) ->
-      let sw_blocks =
-        List.map (fun (tag, cstr_shape, is_mutable) ->
-          let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
-          let result_lam =
-            match cstr_shape with
-            | Tfts_constructor_vals { sorts } ->
-              let layouts =
-                List.map Lambda.layout_of_const_sort sorts
-              in
-              let block_shape = Some (List.map Lambda.must_be_value layouts) in
-              let fields = List.init (List .length layouts) (fun i ->
-                Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
-              make_free_to_stack ~tag block_shape mut fields
-            | Tfts_constructor_mixed shape ->
-              let lambda_shape =
-                Lambda.transl_mixed_product_shape_for_read
-                  ~get_value_kind:(fun _i -> Lambda.generic_value)
-                  ~get_mode:(fun _i -> Lambda.alloc_external)
+      let (sw_blocks, sw_consts) =
+        List.partition_map (fun (tag, cstr_shape, is_mutable) ->
+          match cstr_shape with
+          | Tfts_constructor_const { tag } ->
+            let const_result = Lconst (const_int tag) in
+            Either.Right (tag, const_result)
+          | Tfts_constructor_vals { sorts } ->
+            let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+            let layouts =
+              List.map Lambda.layout_of_const_sort sorts
+            in
+            let block_shape = Some (List.map Lambda.must_be_value layouts) in
+            let fields = List.init (List.length layouts) (fun i ->
+              Lprim (Pfield (i, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+            let result_lam = make_free_to_stack ~tag block_shape mut fields in
+            Either.Left (tag, result_lam)
+          | Tfts_constructor_mixed shape ->
+            let mut = if is_mutable then Lambda.Mutable else Lambda.Immutable in
+            let lambda_shape =
+              Lambda.transl_mixed_product_shape_for_read
+                ~get_value_kind:(fun _i -> Lambda.generic_value)
+                ~get_mode:(fun _i -> Lambda.alloc_external)
                   shape
-              in
-              let extracts = List.init (Array.length shape) (fun i ->
-                Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
-              let mixed_block_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape in
-              make_free_to_stack_mixed ~tag mixed_block_shape mut extracts
-          in
-          (tag, result_lam))
+            in
+            let extracts = List.init (Array.length shape) (fun i ->
+              Lprim (Pmixedfield ([i], lambda_shape, Reads_agree), [l_cast], of_location ~scopes e.exp_loc)) in
+            let mixed_block_shape = Array.map (Lambda.map_mixed_block_element (fun _ -> ())) lambda_shape in
+            let result_lam = make_free_to_stack_mixed ~tag mixed_block_shape mut extracts in
+            Either.Left (tag, result_lam))
         constructors
       in
       let sw = {
-        sw_numconsts = 0;
-        sw_consts = [];
-        sw_numblocks = List.length constructors;
-        sw_blocks ;
+        sw_numconsts = List.length sw_consts;
+        sw_consts;
+        sw_numblocks = List.length sw_blocks;
+        sw_blocks;
         sw_failaction = None;
       } in
       Lswitch (l_cast, sw, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value)

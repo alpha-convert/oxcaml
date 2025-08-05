@@ -542,6 +542,7 @@ and free_to_stack =
   | Tfts_variant_boxed of { constructors : (int * free_to_stack_constructor_shape * bool) list}
 
 and free_to_stack_constructor_shape =
+  | Tfts_constructor_const of { tag : int }
   | Tfts_constructor_vals of { sorts : Jkind_types.Sort.Const.t list }
   | Tfts_constructor_mixed of Types.mixed_product_shape
 
