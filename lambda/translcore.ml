@@ -1454,6 +1454,58 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
         sw_failaction = None;
       } in
       Lswitch (l_cast, sw, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value)
+    | Tfree_to_stack(Tfts_polymorphic_variant{constructors}) ->
+      let (const_constructors, nonconst_constructors) =
+        List.partition_map (fun constructor ->
+          match constructor with
+          | Tfts_poly_variant_const { tag } ->
+            let const_result = Lconst (const_int tag) in
+            Either.Left (tag, const_result)
+          | Tfts_poly_variant_val { tag } ->
+            Either.Right tag)
+        constructors
+      in
+      let lam_const =
+        if const_constructors = [] then None
+        else
+          let sw_const = {
+            sw_numconsts = List.length const_constructors;
+            sw_consts = const_constructors;
+            sw_numblocks = 0;
+            sw_blocks = [];
+            sw_failaction = None;
+          } in
+          Some (Lswitch (l_cast, sw_const, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value))
+      in
+      let lam_nonconst =
+        if nonconst_constructors = [] then None
+        else
+          let v = Ident.create_local "variant_tag" in
+          let v_duid = Lambda.debug_uid_none in
+          let tag_extract = Lprim (Pfield (0, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
+          let nonconst_cases = List.map (fun tag ->
+            let field_value = Lprim (Pfield (1, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
+            let block_shape = Some [Lambda.generic_value; Lambda.generic_value] in
+            let result_lam = make_free_to_stack ~tag:0 block_shape Lambda.Immutable [Lconst (const_int tag); field_value] in
+            (tag, result_lam)
+          ) nonconst_constructors in
+          let sw_nonconst = {
+            sw_numconsts = List.length nonconst_cases;
+            sw_consts = nonconst_cases;
+            sw_numblocks = 0;
+            sw_blocks = [];
+            sw_failaction = None;
+          } in
+          let tag_switch = Lswitch (Lvar v, sw_nonconst, of_location ~scopes e.exp_loc, Lambda.Pvalue Lambda.generic_value) in
+          Some (Llet (Alias, Lambda.layout_int, v, v_duid, tag_extract, tag_switch))
+      in
+      match lam_const, lam_nonconst with
+      | Some const_lam, Some nonconst_lam ->
+        Lifthenelse (Lprim (Pisint { variant_only = true }, [l_cast], of_location ~scopes e.exp_loc),
+                    const_lam, nonconst_lam, Lambda.Pvalue Lambda.generic_value)
+      | Some const_lam, None -> const_lam
+      | None, Some nonconst_lam -> nonconst_lam
+      | None, None -> assert false
     end
 
 and pure_module m =

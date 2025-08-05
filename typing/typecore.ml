@@ -7358,10 +7358,26 @@ and type_expect_
               | Type_open,_ -> unsupported (Unfreeable inner_ty)
               | Type_record_unboxed_product _,_ -> unsupported (Unfreeable inner_ty)
               end
-        | Tvariant _ ->
+        | Tvariant row ->
           begin match free_to with
           | Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
-          | Pfree_to_stack -> failwith "Unimpl"
+          | Pfree_to_stack ->
+            returns_locally ();
+            let Row { fields; _ } = row_repr row in
+            let constructors =
+              List.map (fun (label, row_field) ->
+                  let tag = Btype.hash_variant label in
+                match row_field_repr row_field with
+                | Rpresent None ->
+                  (Tfts_poly_variant_const {tag})
+                | Rpresent (Some _) ->
+                  (Tfts_poly_variant_val {tag})
+                | Rabsent | Reither _ ->
+                  failwith "Unimpl"
+                  )
+                fields
+            in
+            inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
           end
         | _ -> unsupported (Unfreeable inner_ty)
       in
