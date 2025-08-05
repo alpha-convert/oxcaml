@@ -398,7 +398,7 @@ Error: Type "t" does not have an unboxed version, try free_stack_
 |}]
 
 (* Can free anonymous variants *)
-let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x) 
+let f (x : [`Foo of int] mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 val f : [ `Foo of int ] mallocd @ unique -> local_ [ `Foo of int ] = <fun>
 |}, Principal{|
@@ -410,7 +410,7 @@ Warning 18 [not-principal]: typing this term eagerly matches on the type [ `Foo 
 val f : [ `Foo of int ] mallocd @ unique -> local_ [ `Foo of int ] = <fun>
 |}]
 
-let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x) 
+let f (x : [`Foo of int | `Bar of int * int] mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 val f :
   [ `Bar of int * int | `Foo of int ] mallocd @ unique -> local_
@@ -428,7 +428,7 @@ val f :
 |}]
 
 type t = [`Foo of int]
-let f (x : t mallocd) = exclave_ (free_stack_ x) 
+let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 type t = [ `Foo of int ]
 val f : t mallocd @ unique -> local_ t = <fun>
@@ -443,7 +443,7 @@ val f : t mallocd @ unique -> local_ t = <fun>
 |}]
 
 type t = [`Foo of int | `Bar of int * int]
-let f (x : t mallocd) = exclave_ (free_stack_ x) 
+let f (x : t mallocd) = exclave_ (free_stack_ x)
 [%%expect{|
 type t = [ `Bar of int * int | `Foo of int ]
 val f : t mallocd @ unique -> local_ t = <fun>
@@ -493,26 +493,34 @@ Line 2, characters 24-25:
 Error: Cannot free values of type "int"
 |}]
 
-let f (t : (int -> int) mallocd) = free_ t
+let f (t : (int -> int) mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 41-42:
-1 | let f (t : (int -> int) mallocd) = free_ t
-                                             ^
+Line 1, characters 57-58:
+1 | let f (t : (int -> int) mallocd) = exclave_ (free_stack_ t)
+                                                             ^
 Error: Cannot free values of type "int -> int"
 |}]
 
-let f (t : < get : int > mallocd) = free_ t
+let f (t : < get : int > mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 42-43:
-1 | let f (t : < get : int > mallocd) = free_ t
-                                              ^
+Line 1, characters 58-59:
+1 | let f (t : < get : int > mallocd) = exclave_ (free_stack_ t)
+                                                              ^
 Error: Cannot free values of type "< get : int >"
 |}]
 
-let f (t : [`Foo of int | `Bar of char] mallocd) = free_ t
+let f (t : [`Foo of int | `Bar of char] mallocd) = exclave_ (free_stack_ t)
 [%%expect{|
-Line 1, characters 57-58:
-1 | let f (t : [`Foo of int | `Bar of char] mallocd) = free_ t
-                                                             ^
-Error: Type "[ `Bar of char | `Foo of int ]" does not have an unboxed version, try free_stack_
+val f :
+  [ `Bar of char | `Foo of int ] mallocd @ unique -> local_
+  [ `Bar of char | `Foo of int ] = <fun>
+|}, Principal{|
+Line 1, characters 60-75:
+1 | let f (t : [`Foo of int | `Bar of char] mallocd) = exclave_ (free_stack_ t)
+                                                                ^^^^^^^^^^^^^^^
+Warning 18 [not-principal]: typing this term eagerly matches on the type [ `Bar of char | `Foo of int ], which is not principal.
+
+val f :
+  [ `Bar of char | `Foo of int ] mallocd @ unique -> local_
+  [ `Bar of char | `Foo of int ] = <fun>
 |}]
