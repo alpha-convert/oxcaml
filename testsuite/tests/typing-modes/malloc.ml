@@ -1,4 +1,5 @@
 (* TEST
+ flags  = "-extension external_alloc_beta";
  expect;
 *)
 

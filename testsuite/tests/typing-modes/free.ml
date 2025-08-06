@@ -1,6 +1,6 @@
 (* TEST
  expect;
- flags = "-stop-after typing";
+ flags = "-stop-after typing -extension external_alloc_beta";
 *)
 
 (* Type must be mallocd *)

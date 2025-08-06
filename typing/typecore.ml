@@ -7134,6 +7134,8 @@ and type_expect_
       let exp_extra = (Texp_stack, loc, []) :: exp.exp_extra in
       {exp with exp_extra}
     | Pexp_malloc e ->
+      if not (Language_extension.is_enabled External_alloc) then
+        raise (Error (e.pexp_loc,env,Extension_not_enabled External_alloc));
       let unsupported cat =
         raise (Error (e.pexp_loc, env, Unsupported_external_allocation cat))
       in
@@ -7225,6 +7227,8 @@ and type_expect_
         exp_env = env;
       }
   | Pexp_free (e,free_to) ->
+      if not (Language_extension.is_enabled External_alloc) then
+        raise (Error (e.pexp_loc,env,Extension_not_enabled External_alloc));
       let unsupported reason =
         raise (Error (e.pexp_loc, env, Unsupported_free reason))
       in
@@ -11763,7 +11767,7 @@ let report_error ~loc env =
       Location.errorf ~loc
         "wildcard \"_\" not expected."
   | Unsupported_free reason ->
-        match reason with
+        begin match reason with
         | Has_unboxed_not_supported typ ->
             Location.errorf ~loc
               "Type %a has an unboxed version, but freeing it to unboxed is not yet supported"
@@ -11788,7 +11792,7 @@ let report_error ~loc env =
             Location.errorf ~loc
               "Cannot free values of type %a"
               (Style.as_inline_code Printtyp.type_expr) typ
-
+        end
 
 
 
