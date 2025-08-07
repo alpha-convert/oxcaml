@@ -827,7 +827,10 @@ let prim_has_valid_reprs ~loc prim =
       exactly [Same_as_ocaml_repr C.value; Same_as_ocaml_repr C.bits64]
     | "%reinterpret_unboxed_int64_as_tagged_int63" ->
       exactly [Same_as_ocaml_repr C.bits64; Same_as_ocaml_repr C.value]
-
+    | "%use_mallocd" ->
+        exactly [Same_as_ocaml_repr C.word;
+                 Same_as_ocaml_repr C.value;
+                 Same_as_ocaml_repr (C.Product [C.value;C.word])]
     | name -> (
         match String.Map.find_opt name stringlike_indexing_primitives with
         | Some reprs -> exactly reprs

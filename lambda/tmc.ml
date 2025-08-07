@@ -992,6 +992,7 @@ let rec choice ctx t =
     | Psequand | Psequor
     | Ppoll
     | Ppeek _ | Ppoke _
+    | Preinterpret_word_as_value
       ->
         let primargs = traverse_list ctx primargs in
         Choice.lambda (Lprim (prim, primargs, loc))

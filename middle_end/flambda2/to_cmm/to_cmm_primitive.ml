@@ -1114,6 +1114,8 @@ let unary_primitive env res dbg f arg =
   | Make_lazy lazy_tag ->
     let tag = Tag.to_int (P.Lazy_block_tag.to_tag lazy_tag) in
     None, res, C.make_alloc ~mode:Heap dbg ~tag [arg]
+  | Reinterpret_nativeint_as_value ->
+    None, res, Cmm.Cop (Creinterpret_cast Value_of_int, [arg], dbg)
 
 let binary_primitive env dbg f x y =
   match (f : P.binary_primitive) with
