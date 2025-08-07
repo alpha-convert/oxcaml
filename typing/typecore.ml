@@ -6006,7 +6006,6 @@ and type_expect_
         | Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
         | Pfree_to_stack ->
           returns_locally ();
-          let Row { fields; _ } = row_repr row in
           let constructors =
             List.map (fun (label, row_field) ->
               let tag = Btype.hash_variant label in
@@ -6016,7 +6015,7 @@ and type_expect_
               | Rpresent (Some _) ->
                 (Tfts_poly_variant_val {tag})
               | Rabsent | Reither _ -> unsupported (Unfreeable inner_ty))
-              fields
+              (row_fields row)
           in
           inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
         end
