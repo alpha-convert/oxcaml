@@ -1,5 +1,6 @@
 (* TEST
  expect;
+ flags = "-stop-after typing";
 *)
 
 (* Type must be mallocd *)
