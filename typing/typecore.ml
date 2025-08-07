@@ -7133,97 +7133,97 @@ and type_expect_
       end;
       let exp_extra = (Texp_stack, loc, []) :: exp.exp_extra in
       {exp with exp_extra}
-    | Pexp_malloc e ->
-      let unsupported cat =
-        raise (Error (e.pexp_loc, env, Unsupported_external_allocation cat))
-      in
-      let not_alloc () =
-        raise (Error (e.pexp_loc, env, Not_allocation))
-      in
-      (* If we do the same thing as Pexp_stack here and typecheck *anything*
-         before checking if it's actually malloc-able, we get worse error
-         messages. Better to prune based on syntax first, then type errors. *)
-      (match e.pexp_desc with
-      | Pexp_function _ -> unsupported Function
-      | Pexp_comprehension _ -> unsupported Comprehension
-      | Pexp_new _ -> unsupported Object
-      | Pexp_lazy _ -> unsupported Lazy
-      | Pexp_object _ -> unsupported Object
-      | Pexp_pack _ -> unsupported Module
-      | Pexp_array _ -> unsupported Array
-      | Pexp_record _ -> ()
-      | Pexp_tuple _ -> ()
-      | Pexp_construct (_,Some _) -> ()
-      | Pexp_variant (_,Some _) -> ()
-      | Pexp_construct (_,None) -> not_alloc ()
-      | Pexp_variant (_,None) -> not_alloc ()
-      | (Pexp_unreachable|Pexp_hole|Pexp_ident _|Pexp_constant _
-      | Pexp_let (_, _, _, _)|Pexp_apply (_, _)| Pexp_match (_, _)
-      | Pexp_try (_, _) | Pexp_unboxed_tuple _
-      | Pexp_record_unboxed_product (_, _) | Pexp_field (_, _)
-      | Pexp_unboxed_field (_, _) | Pexp_setfield (_, _, _)
-      | Pexp_ifthenelse (_, _, _) | Pexp_sequence (_, _) | Pexp_while (_, _)
-      | Pexp_for (_, _, _, _, _) | Pexp_constraint (_, _, _)
-      | Pexp_coerce (_, _, _)| Pexp_send (_, _) | Pexp_setvar (_, _)
-      | Pexp_override _ | Pexp_letmodule (_, _, _) | Pexp_letexception (_, _)
-      | Pexp_assert _ | Pexp_poly (_, _) | Pexp_newtype (_, _, _)
-      | Pexp_open (_, _)| Pexp_letop _  |Pexp_extension _ | Pexp_stack _
-      | Pexp_malloc _ | Pexp_overwrite (_, _) | Pexp_free(_,_)) -> not_alloc ());
-      let inner_ty =
-        newvar (Jkind.Builtin.value_or_null ~why:(Type_argument
-          { parent_path = Predef.path_mallocd ; position = 1; arity = 1}))
-      in
-      let to_unify = Predef.type_mallocd inner_ty in
-      with_explanation (fun () -> unify_exp_types loc env to_unify ty_expected);
-      let expected_mode =
-        mode_coerce
-          (Value.max_with_comonadic Externality Externality.external_)
-          expected_mode
-      in
-      let exp =
-        type_expect env {expected_mode with allocator = Allocator_malloc} e
-          {ty = inner_ty; explanation}
-      in
-      let exp_desc = match exp.exp_desc with
-      | Texp_record {representation = Record_unboxed} -> not_alloc ()
-      | Texp_record r -> Texp_record {r with alloc_mode = Some External}
-      | Texp_tuple(el,_) -> Texp_tuple(el,External)
-      | Texp_construct(loc,cstr,args,_) ->
-        Texp_construct(loc,cstr,args,Some External)
-      | Texp_variant(l, Some (arg,_)) -> Texp_variant(l,Some(arg,External))
-      | Texp_variant(_, None)
-      | Texp_unreachable | Texp_src_pos
-      | Texp_ident (_, _, _, _, _) | Texp_constant _
-      | Texp_let (_, _, _) | Texp_letmutable (_, _) | Texp_function _
-      | Texp_apply (_, _, _, _, _) | Texp_match (_, _, _, _)
-      | Texp_try (_, _) | Texp_unboxed_tuple _
-      | Texp_record_unboxed_product _
-      | Texp_field (_, _, _, _, _, _) | Texp_unboxed_field (_, _, _, _, _)
-      | Texp_setfield (_, _, _, _, _) | Texp_array (_, _, _, _)
-      | Texp_list_comprehension _ | Texp_array_comprehension (_, _, _)
-      | Texp_ifthenelse (_, _, _) | Texp_sequence (_, _, _)
-      | Texp_while _ | Texp_for _
-      | Texp_send (_, _, _) | Texp_new (_, _, _, _)
-      | Texp_instvar (_, _, _) | Texp_mutvar _
-      | Texp_setinstvar (_, _, _, _) | Texp_setmutvar (_, _, _)
-      | Texp_override (_, _) | Texp_letmodule (_, _, _, _, _)
-      | Texp_letexception (_, _) | Texp_assert (_, _) | Texp_lazy _
-      | Texp_object (_, _) | Texp_pack _ | Texp_letop _
-      | Texp_extension_constructor (_, _) | Texp_open (_, _)
-      | Texp_probe _ | Texp_probe_is_enabled _ | Texp_exclave _
-      | Texp_overwrite (_, _) | Texp_hole _ | Texp_free (_,_) ->
-          Misc.fatal_error
-              "Parsetree for externally-allocable \
-               term elaborated to Typedtree corresponding to something else"
-      in
-      re {
-        exp_desc = exp_desc;
-        exp_type = Predef.type_mallocd exp.exp_type;
-        exp_loc = loc;
-        exp_extra = ((Texp_alloc,loc,[]) :: exp.exp_extra);
-        exp_attributes = sexp.pexp_attributes;
-        exp_env = env;
-      }
+  | Pexp_malloc e ->
+    let unsupported cat =
+      raise (Error (e.pexp_loc, env, Unsupported_external_allocation cat))
+    in
+    let not_alloc () =
+      raise (Error (e.pexp_loc, env, Not_allocation))
+    in
+    (* If we do the same thing as Pexp_stack here and typecheck *anything*
+       before checking if it's actually malloc-able, we get worse error
+       messages. Better to prune based on syntax first, then type errors. *)
+    (match e.pexp_desc with
+    | Pexp_function _ -> unsupported Function
+    | Pexp_comprehension _ -> unsupported Comprehension
+    | Pexp_new _ -> unsupported Object
+    | Pexp_lazy _ -> unsupported Lazy
+    | Pexp_object _ -> unsupported Object
+    | Pexp_pack _ -> unsupported Module
+    | Pexp_array _ -> unsupported Array
+    | Pexp_record _ -> ()
+    | Pexp_tuple _ -> ()
+    | Pexp_construct (_,Some _) -> ()
+    | Pexp_variant (_,Some _) -> ()
+    | Pexp_construct (_,None) -> not_alloc ()
+    | Pexp_variant (_,None) -> not_alloc ()
+    | (Pexp_unreachable|Pexp_hole|Pexp_ident _|Pexp_constant _
+    | Pexp_let (_, _, _, _)|Pexp_apply (_, _)| Pexp_match (_, _)
+    | Pexp_try (_, _) | Pexp_unboxed_tuple _
+    | Pexp_record_unboxed_product (_, _) | Pexp_field (_, _)
+    | Pexp_unboxed_field (_, _) | Pexp_setfield (_, _, _)
+    | Pexp_ifthenelse (_, _, _) | Pexp_sequence (_, _) | Pexp_while (_, _)
+    | Pexp_for (_, _, _, _, _) | Pexp_constraint (_, _, _)
+    | Pexp_coerce (_, _, _)| Pexp_send (_, _) | Pexp_setvar (_, _)
+    | Pexp_override _ | Pexp_letmodule (_, _, _) | Pexp_letexception (_, _)
+    | Pexp_assert _ | Pexp_poly (_, _) | Pexp_newtype (_, _, _)
+    | Pexp_open (_, _)| Pexp_letop _  |Pexp_extension _ | Pexp_stack _
+    | Pexp_malloc _ | Pexp_overwrite (_, _) | Pexp_free(_,_)) -> not_alloc ());
+    let inner_ty =
+      newvar (Jkind.Builtin.value_or_null ~why:(Type_argument
+        { parent_path = Predef.path_mallocd ; position = 1; arity = 1}))
+    in
+    let to_unify = Predef.type_mallocd inner_ty in
+    with_explanation (fun () -> unify_exp_types loc env to_unify ty_expected);
+    let expected_mode =
+      mode_coerce
+        (Value.max_with_comonadic Externality Externality.external_)
+        expected_mode
+    in
+    let exp =
+      type_expect env {expected_mode with allocator = Allocator_malloc} e
+        {ty = inner_ty; explanation}
+    in
+    let exp_desc = match exp.exp_desc with
+    | Texp_record {representation = Record_unboxed} -> not_alloc ()
+    | Texp_record r -> Texp_record {r with alloc_mode = Some External}
+    | Texp_tuple(el,_) -> Texp_tuple(el,External)
+    | Texp_construct(loc,cstr,args,_) ->
+      Texp_construct(loc,cstr,args,Some External)
+    | Texp_variant(l, Some (arg,_)) -> Texp_variant(l,Some(arg,External))
+    | Texp_variant(_, None)
+    | Texp_unreachable | Texp_src_pos
+    | Texp_ident (_, _, _, _, _) | Texp_constant _
+    | Texp_let (_, _, _) | Texp_letmutable (_, _) | Texp_function _
+    | Texp_apply (_, _, _, _, _) | Texp_match (_, _, _, _)
+    | Texp_try (_, _) | Texp_unboxed_tuple _
+    | Texp_record_unboxed_product _
+    | Texp_field (_, _, _, _, _, _) | Texp_unboxed_field (_, _, _, _, _)
+    | Texp_setfield (_, _, _, _, _) | Texp_array (_, _, _, _)
+    | Texp_list_comprehension _ | Texp_array_comprehension (_, _, _)
+    | Texp_ifthenelse (_, _, _) | Texp_sequence (_, _, _)
+    | Texp_while _ | Texp_for _
+    | Texp_send (_, _, _) | Texp_new (_, _, _, _)
+    | Texp_instvar (_, _, _) | Texp_mutvar _
+    | Texp_setinstvar (_, _, _, _) | Texp_setmutvar (_, _, _)
+    | Texp_override (_, _) | Texp_letmodule (_, _, _, _, _)
+    | Texp_letexception (_, _) | Texp_assert (_, _) | Texp_lazy _
+    | Texp_object (_, _) | Texp_pack _ | Texp_letop _
+    | Texp_extension_constructor (_, _) | Texp_open (_, _)
+    | Texp_probe _ | Texp_probe_is_enabled _ | Texp_exclave _
+    | Texp_overwrite (_, _) | Texp_hole _ | Texp_free (_,_) ->
+        Misc.fatal_error
+            "Parsetree for externally-allocable \
+             term elaborated to Typedtree corresponding to something else"
+    in
+    re {
+      exp_desc = exp_desc;
+      exp_type = Predef.type_mallocd exp.exp_type;
+      exp_loc = loc;
+      exp_extra = ((Texp_alloc,loc,[]) :: exp.exp_extra);
+      exp_attributes = sexp.pexp_attributes;
+      exp_env = env;
+    }
   | Pexp_free (e,free_to) ->
     let unsupported reason =
       raise (Error (e.pexp_loc, env, Unsupported_free reason))
