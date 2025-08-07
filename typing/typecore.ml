@@ -5953,40 +5953,44 @@ and type_expect_
           inner_ty, Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
         | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
           let constructors =
-            List.map2 (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, _) ->
-              (* CR jcutler for ccasinghino: is this right? I couldn't find a simpler
-                 way to get the cstr_description from the cstr_desc *)
-              let cstr_desc =
-                Env.find_constructor_by_name
-                  (Longident.Lident (Ident.name cstr_decl.cd_id))
-                  env
-              in
-              let tag =
-                match cstr_desc.cstr_tag with
-                | Ordinary {runtime_tag} -> runtime_tag
-                | Null | Extension _ ->
-                  Misc.fatal_error
-                    "Variant representation is incompatible with these\
-                    constructor types."
-              in
-              let shape, is_mutable =
-                match cstr_repr with
-                | _  when cstr_desc.cstr_constant ->
-                  Tfts_constructor_const {tag}, false
-                | Constructor_uniform_value ->
-                  (match cstr_decl.cd_args with
-                   | Cstr_tuple args ->
-                     Tfts_constructor_vals { sorts = List.map (fun ca -> ca.ca_sort) args }, false
-                   | Cstr_record lds ->
-                     Tfts_constructor_vals { sorts = List.map (fun ld -> ld.ld_sort) lds }, is_mutable lds)
-                | Constructor_mixed shape ->
-                  let is_mut = match cstr_decl.cd_args with
-                    | Cstr_tuple _ -> false
-                    | Cstr_record lds -> is_mutable lds
-                  in
-                  Tfts_constructor_mixed shape, is_mut
-              in
-              tag, shape, is_mutable)
+            List.map2
+              (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, _) ->
+                (* CR jcutler for ccasinghino: is this right? I couldn't find a
+                   simpler way to get the cstr_description from the cstr_desc *)
+                let cstr_desc =
+                  Env.find_constructor_by_name
+                    (Longident.Lident (Ident.name cstr_decl.cd_id))
+                    env
+                in
+                let tag =
+                  match cstr_desc.cstr_tag with
+                  | Ordinary {runtime_tag} -> runtime_tag
+                  | Null | Extension _ ->
+                    Misc.fatal_error
+                      "Variant representation is incompatible with these\
+                      constructor types."
+                in
+                let shape, is_mutable =
+                  match cstr_repr with
+                  | _  when cstr_desc.cstr_constant ->
+                    Tfts_constructor_const {tag}, false
+                  | Constructor_uniform_value ->
+                    let sorts, is_mutable =
+                      (match cstr_decl.cd_args with
+                      | Cstr_tuple args ->
+                        List.map (fun ca -> ca.ca_sort) args , false
+                      | Cstr_record lds ->
+                        List.map (fun ld -> ld.ld_sort) lds , is_mutable lds)
+                    in
+                    Tfts_constructor_vals {sorts}, is_mutable
+                  | Constructor_mixed shape ->
+                    let is_mut = match cstr_decl.cd_args with
+                      | Cstr_tuple _ -> false
+                      | Cstr_record lds -> is_mutable lds
+                    in
+                    Tfts_constructor_mixed shape, is_mut
+                in
+                tag, shape, is_mutable)
               cstrs (Array.to_list sorts)
           in
           inner_ty, Tfree_to_stack(Tfts_variant_boxed{constructors})
@@ -6008,7 +6012,10 @@ and type_expect_
           in
           inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
         end
-      (* | _ -> unsupported (Unfreeable inner_ty) *)
+      | Tnil |Tvar _ | Tarrow (_, _, _, _) | Tunboxed_tuple _ | Tobject (_, _)
+      | Tfield (_, _, _, _) | Tlink _ | Tsubst (_, _) | Tunivar _
+      | Tpoly (_, _) | Tpackage (_, _) | Tof_kind _ ->
+        unsupported (Unfreeable inner_ty)
     in
     (match tfree_to with
     | Tfree_to_stack _ ->
