@@ -43,7 +43,7 @@ val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 Line 3, characters 10-17:
 3 |   let _ = free_ x in
               ^^^^^^^
-Warning 18 [not-principal]: this use of free is not principal.
+Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b, which is not principal.
 
 val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 |}]
@@ -127,38 +127,56 @@ them yet, but it's fine to say that they can be free.
 *)
 let f (x : float mallocd) = free_ x
 [%%expect {|
-val f : float mallocd @ unique -> float# = <fun>
+Line 1, characters 34-35:
+1 | let f (x : float mallocd) = free_ x
+                                      ^
+Error: Type "float" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (x : int64 mallocd) = free_ x
 [%%expect {|
-val f : int64 mallocd @ unique -> int64# = <fun>
+Line 1, characters 34-35:
+1 | let f (x : int64 mallocd) = free_ x
+                                      ^
+Error: Type "int64" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 let f (x : int32 mallocd) = free_ x
 [%%expect {|
-val f : int32 mallocd @ unique -> int32# = <fun>
+Line 1, characters 34-35:
+1 | let f (x : int32 mallocd) = free_ x
+                                      ^
+Error: Type "int32" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = float
 let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = float
-val f : t mallocd @ unique -> float# = <fun>
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = int64
 let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = int64
-val f : t mallocd @ unique -> int64# = <fun>
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 type t = int32
 let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = int32
-val f : t mallocd @ unique -> int32# = <fun>
+Line 2, characters 30-31:
+2 | let f (x : t mallocd) = free_ x
+                                  ^
+Error: Type "t" has an unboxed version, but freeing it to unboxed is not yet supported
 |}]
 
 (* Finding the unboxed version of a type works deeply through modules,
@@ -199,7 +217,7 @@ module M : sig type t end
 Line 7, characters 32-33:
 7 | let f (x : M.t mallocd) = free_ x
                                     ^
-Error: Type "M.t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "M.t"
 |}]
 
 module M : sig
@@ -214,7 +232,7 @@ module M : sig type t end
 Line 7, characters 32-33:
 7 | let f (x : M.t mallocd) = free_ x
                                     ^
-Error: Type "M.t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "M.t"
 |}]
 
 
@@ -323,7 +341,7 @@ type t
 Line 2, characters 30-31:
 2 | let f (x : t mallocd) = free_ x
                                   ^
-Error: Type "t" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "t"
 |}]
 
 let f (x : int mallocd) =
@@ -332,7 +350,7 @@ let f (x : int mallocd) =
 Line 2, characters 8-9:
 2 |   free_ x
             ^
-Error: Type "int" does not have an unboxed version, try free_stack_
+Error: Cannot free values of type "int"
 |}]
 
 let f (t : (int -> int) mallocd) = free_ t
