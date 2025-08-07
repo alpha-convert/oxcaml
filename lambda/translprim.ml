@@ -1795,7 +1795,7 @@ let lambda_of_prim prim_name prim loc args arg_exps =
   match prim, args with
   | Lambda lf, args -> Lapply
     {
-      ap_func = (Lfunction lf);
+      ap_func = Lfunction lf;
       ap_args = args;
       ap_result_layout = lf.return;
       ap_tailcall = Default_tailcall;
