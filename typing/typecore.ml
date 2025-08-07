@@ -5897,17 +5897,12 @@ and type_expect_
       if not (has_unboxed_version decl) then unsupported (No_unboxed_version inner_ty)
       else Path.unboxed_version p
     in
-    let exp_type,free_to =
+    let exp_type,tfree_to =
       let is_mutable lds =
         List.exists
           (fun (ld : Types.label_declaration) ->
               Types.is_mutable ld.ld_mutable)
           lds
-      in
-      let returns_locally () =
-        submode ~loc ~env
-          (Value.min_with_comonadic Areality Regionality.local)
-          expected_mode
       in
       match get_desc (Ctype.expand_head env inner_ty) with
       | Ttuple args ->
@@ -5916,7 +5911,6 @@ and type_expect_
             newty (Tunboxed_tuple(args)),
             Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
         | Pfree_to_stack ->
-            returns_locally ();
             inner_ty, Tfree_to_stack(Tfts_tuple({num_fields = List.length args}))
         end
       | Tconstr(p,args,m) ->
@@ -5938,12 +5932,10 @@ and type_expect_
         | Type_open,_ ->
           unsupported (Unfreeable inner_ty)
         | Type_record(lds,Record_float,_), Pfree_to_stack ->
-          returns_locally ();
           let num_fields = List.length lds in
           let is_mutable = is_mutable lds in
           inner_ty, Tfree_to_stack(Tfts_record_float{num_fields; is_mutable})
         | Type_record(lds,Record_ufloat,_), Pfree_to_stack ->
-          returns_locally ();
           let num_fields = List.length lds in
           let is_mutable = is_mutable lds in
           inner_ty, Tfree_to_stack(Tfts_record_ufloat{num_fields; is_mutable})
@@ -5952,14 +5944,12 @@ and type_expect_
           let tfu = Tftu_record_boxed {sorts} in
           newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
         | Type_record(lds,Record_boxed sorts,_), Pfree_to_stack ->
-          returns_locally ();
           inner_ty, Tfree_to_stack(Tfts_record_boxed {sorts; is_mutable = is_mutable lds})
         | Type_record(_,Record_mixed shape,_), Pfree_to_unbox ->
           let p_unboxed = get_unboxed_version p decl in
           let tfu = Tftu_record_mixed {shape} in
           newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
         | Type_record(lds,Record_mixed shape,_), Pfree_to_stack ->
-          returns_locally ();
           inner_ty, Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
         | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
           let constructors =
@@ -6005,7 +5995,6 @@ and type_expect_
         begin match free_to with
         | Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
         | Pfree_to_stack ->
-          returns_locally ();
           let constructors =
             List.map (fun (label, row_field) ->
               let tag = Btype.hash_variant label in
@@ -6019,8 +6008,14 @@ and type_expect_
           in
           inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
         end
-      | _ -> unsupported (Unfreeable inner_ty)
+      (* | _ -> unsupported (Unfreeable inner_ty) *)
     in
+    (match tfree_to with
+    | Tfree_to_stack _ ->
+        submode ~loc ~env
+          (Value.min_with_comonadic Areality Regionality.local)
+          expected_mode
+    | Tfree_to_unbox _ -> ());
     if not (is_principal inner_ty) && !Clflags.principal then begin
       let msg =
         Format.asprintf
@@ -6031,7 +6026,7 @@ and type_expect_
       Location.prerr_warning loc (Warnings.Not_principal msg)
     end;
     unify_exp_types loc env exp_type ty_expected;
-    let exp_desc = Texp_free(exp,free_to) in
+    let exp_desc = Texp_free(exp,tfree_to) in
     re {
       exp_desc;
       exp_type;
