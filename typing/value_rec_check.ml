@@ -1063,7 +1063,6 @@ let rec expression : Typedtree.expression -> term_judg =
         expression exp2
       ]
     | Texp_hole _ -> empty
-    (* CR jcutler: I have no idea what this is about, make sure you understand *)
     | Texp_free (e,_) -> expression e
 
 (* Function bodies.
