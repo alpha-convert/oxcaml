@@ -13,8 +13,7 @@ Error: This expression has type "int" but an expression was expected of type
          "'a mallocd"
 |}]
 
-(* Free requires its argument uniquely,
-  this is checked first, before the type *)
+(* Free requires its argument uniquely *)
 let f (x @ aliased) = free_ x
 [%%expect{|
 Line 1, characters 28-29:
@@ -43,7 +42,7 @@ val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 Line 3, characters 10-17:
 3 |   let _ = free_ x in
               ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b, which is not principal.
+Warning 18 [not-principal]: this use of free is not principal.
 
 val f : (int * int) mallocd @ unique -> int * int -> int = <fun>
 |}]
@@ -65,24 +64,10 @@ Successful free-to-unbox of tuples
 let f (x : (_ * _) mallocd)  = free_ x
 [%%expect {|
 val f : ('a * 'b) mallocd @ unique -> #('a * 'b) = <fun>
-|}, Principal{|
-Line 1, characters 31-38:
-1 | let f (x : (_ * _) mallocd)  = free_ x
-                                   ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b, which is not principal.
-
-val f : ('a * 'b) mallocd @ unique -> #('a * 'b) = <fun>
 |}]
 
 let f (x : (_ * _ * _) mallocd)  = free_ x
 [%%expect {|
-val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
-|}, Principal{|
-Line 1, characters 35-42:
-1 | let f (x : (_ * _ * _) mallocd)  = free_ x
-                                       ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b * 'c, which is not principal.
-
 val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 |}]
 
@@ -91,28 +76,12 @@ let f (x : 'a t mallocd)  = free_ x
 [%%expect {|
 type 'a t = 'a * 'a
 val f : 'a t mallocd @ unique -> #('a * 'a) = <fun>
-|}, Principal{|
-type 'a t = 'a * 'a
-Line 2, characters 28-35:
-2 | let f (x : 'a t mallocd)  = free_ x
-                                ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type 'a t, which is not principal.
-
-val f : 'a t mallocd @ unique -> #('a * 'a) = <fun>
 |}]
 
 type 'a t = 'a * 'a * 'a
 let f (x : (_ * _ * _) mallocd)  = free_ x
 [%%expect {|
 type 'a t = 'a * 'a * 'a
-val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
-|}, Principal{|
-type 'a t = 'a * 'a * 'a
-Line 2, characters 35-42:
-2 | let f (x : (_ * _ * _) mallocd)  = free_ x
-                                       ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type 'a * 'b * 'c, which is not principal.
-
 val f : ('a * 'b * 'c) mallocd @ unique -> #('a * 'b * 'c) = <fun>
 |}]
 
@@ -122,28 +91,12 @@ let f (x : t mallocd)  = free_ x
 [%%expect {|
 type t = { x : int; y : string @@ external_; }
 val f : t mallocd @ unique -> t# = <fun>
-|}, Principal{|
-type t = { x : int; y : string @@ external_; }
-Line 2, characters 25-32:
-2 | let f (x : t mallocd)  = free_ x
-                             ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
-val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = {x : int; y : string}
 let f (x : t mallocd)  = free_ x
 [%%expect {|
 type t = { x : int; y : string; }
-val f : t mallocd @ unique -> t# = <fun>
-|}, Principal{|
-type t = { x : int; y : string; }
-Line 2, characters 25-32:
-2 | let f (x : t mallocd)  = free_ x
-                             ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
 val f : t mallocd @ unique -> t# = <fun>
 |}]
 
@@ -152,14 +105,6 @@ let f (x : t mallocd)  = free_ x
 [%%expect {|
 type t = { mutable x : int; mutable y : string @@ external_; }
 val f : t mallocd @ unique -> t# = <fun>
-|}, Principal{|
-type t = { mutable x : int; mutable y : string @@ external_; }
-Line 2, characters 25-32:
-2 | let f (x : t mallocd)  = free_ x
-                             ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
-val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = {mutable x : int64#; mutable y : string @@ external_}
@@ -167,28 +112,12 @@ let f (x : t mallocd)  = free_ x
 [%%expect {|
 type t = { mutable x : int64#; mutable y : string @@ external_; }
 val f : t mallocd @ unique -> t# = <fun>
-|}, Principal{|
-type t = { mutable x : int64#; mutable y : string @@ external_; }
-Line 2, characters 25-32:
-2 | let f (x : t mallocd)  = free_ x
-                             ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
-val f : t mallocd @ unique -> t# = <fun>
 |}]
 
 type t = {mutable x : int64#; y : float#}
 let f (x : t mallocd)  = free_ x
 [%%expect {|
 type t = { mutable x : int64#; y : float#; }
-val f : t mallocd @ unique -> t# = <fun>
-|}, Principal{|
-type t = { mutable x : int64#; y : float#; }
-Line 2, characters 25-32:
-2 | let f (x : t mallocd)  = free_ x
-                             ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
 val f : t mallocd @ unique -> t# = <fun>
 |}]
 
@@ -198,51 +127,22 @@ them yet, but it's fine to say that they can be free.
 let f (x : float mallocd) = free_ x
 [%%expect {|
 val f : float mallocd @ unique -> float# = <fun>
-|}, Principal{|
-Line 1, characters 28-35:
-1 | let f (x : float mallocd) = free_ x
-                                ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type float, which is not principal.
-
-val f : float mallocd @ unique -> float# = <fun>
 |}]
 
 let f (x : int64 mallocd) = free_ x
 [%%expect {|
-val f : int64 mallocd @ unique -> int64# = <fun>
-|}, Principal{|
-Line 1, characters 28-35:
-1 | let f (x : int64 mallocd) = free_ x
-                                ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type int64, which is not principal.
-
 val f : int64 mallocd @ unique -> int64# = <fun>
 |}]
 
 let f (x : int32 mallocd) = free_ x
 [%%expect {|
 val f : int32 mallocd @ unique -> int32# = <fun>
-|}, Principal{|
-Line 1, characters 28-35:
-1 | let f (x : int32 mallocd) = free_ x
-                                ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type int32, which is not principal.
-
-val f : int32 mallocd @ unique -> int32# = <fun>
 |}]
 
 type t = float
 let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = float
-val f : t mallocd @ unique -> float# = <fun>
-|}, Principal{|
-type t = float
-Line 2, characters 24-31:
-2 | let f (x : t mallocd) = free_ x
-                            ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
 val f : t mallocd @ unique -> float# = <fun>
 |}]
 
@@ -251,28 +151,12 @@ let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = int64
 val f : t mallocd @ unique -> int64# = <fun>
-|}, Principal{|
-type t = int64
-Line 2, characters 24-31:
-2 | let f (x : t mallocd) = free_ x
-                            ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
-val f : t mallocd @ unique -> int64# = <fun>
 |}]
 
 type t = int32
 let f (x : t mallocd) = free_ x
 [%%expect {|
 type t = int32
-val f : t mallocd @ unique -> int32# = <fun>
-|}, Principal{|
-type t = int32
-Line 2, characters 24-31:
-2 | let f (x : t mallocd) = free_ x
-                            ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type t, which is not principal.
-
 val f : t mallocd @ unique -> int32# = <fun>
 |}]
 
@@ -288,14 +172,6 @@ let f (x : M.t mallocd) = free_ x
 [%%expect{|
 module M : sig type t = int * int end
 val f : M.t mallocd @ unique -> #(int * int) = <fun>
-|}, Principal{|
-module M : sig type t = int * int end
-Line 7, characters 26-33:
-7 | let f (x : M.t mallocd) = free_ x
-                              ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type M.t, which is not principal.
-
-val f : M.t mallocd @ unique -> #(int * int) = <fun>
 |}]
 
 module M : sig
@@ -307,14 +183,6 @@ end
 let f (x : M.t mallocd) = free_ x
 [%%expect{|
 module M : sig type t = { x : int; y : int; } end
-val f : M.t mallocd @ unique -> M.t# = <fun>
-|}, Principal{|
-module M : sig type t = { x : int; y : int; } end
-Line 7, characters 26-33:
-7 | let f (x : M.t mallocd) = free_ x
-                              ^^^^^^^
-Warning 18 [not-principal]: typing this term eagerly matches on the type M.t, which is not principal.
-
 val f : M.t mallocd @ unique -> M.t# = <fun>
 |}]
 
@@ -394,7 +262,7 @@ Error: Type "t" does not have an unboxed version, try free_stack_
 
 (* Cannot unboxed-free a polymorphic variant, even with definite shape *)
 
-let f (x : [`Foo of int] mallocd) = free_ x 
+let f (x : [`Foo of int] mallocd) = free_ x
 [%%expect{|
 Line 1, characters 42-43:
 1 | let f (x : [`Foo of int] mallocd) = free_ x
@@ -402,7 +270,7 @@ Line 1, characters 42-43:
 Error: Type "[ `Foo of int ]" does not have an unboxed version, try free_stack_
 |}]
 
-let f (x : [`Foo of int | `Bar of int * int] mallocd) = free_ x 
+let f (x : [`Foo of int | `Bar of int * int] mallocd) = free_ x
 [%%expect{|
 Line 1, characters 62-63:
 1 | let f (x : [`Foo of int | `Bar of int * int] mallocd) = free_ x
@@ -411,7 +279,7 @@ Error: Type "[ `Bar of int * int | `Foo of int ]" does not have an unboxed versi
 |}]
 
 type t = [`Foo of int]
-let f (x : t mallocd) = free_ x 
+let f (x : t mallocd) = free_ x
 [%%expect{|
 type t = [ `Foo of int ]
 Line 2, characters 30-31:
@@ -421,7 +289,7 @@ Error: Type "t" does not have an unboxed version, try free_stack_
 |}]
 
 type t = [`Foo of int | `Bar of int * int]
-let f (x : t mallocd) = free_ x 
+let f (x : t mallocd) = free_ x
 [%%expect{|
 type t = [ `Bar of int * int | `Foo of int ]
 Line 2, characters 30-31:

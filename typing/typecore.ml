@@ -7226,11 +7226,24 @@ and type_expect_
         raise (Error (e.pexp_loc, env, Unsupported_free reason))
       in
       let get_expanded_desc env ty = get_desc (Ctype.expand_head env ty) in
-      let inner_ty =
-        newvar (Jkind.Builtin.value_or_null
-                    ~why:(Type_argument
-                          { parent_path = Predef.path_mallocd ;
-                            position = 1; arity = 1}))
+      let expected_mode =
+            mode_coerce
+              (Value.of_const {Value.Const.max with uniqueness = Unique})
+              expected_mode
+      in
+      let inner_ty,exp =
+        with_local_level ~post:(
+          fun (_,exp) -> generalize exp.exp_type
+        )
+        (fun () ->
+            let inner_ty =
+              newvar (Jkind.Builtin.value_or_null
+                          ~why:(Type_argument
+                                { parent_path = Predef.path_mallocd ;
+                                  position = 1; arity = 1}))
+            in
+            let mallocd_ty = Predef.type_mallocd inner_ty in
+          inner_ty,type_expect env expected_mode e {ty = mallocd_ty; explanation})
       in
       let get_unboxed_version p env =
           let decl =
@@ -7241,17 +7254,9 @@ and type_expect_
           | None -> unsupported (No_unboxed_version inner_ty)
           | _ -> Path.unboxed_version p
       in
-      let mallocd_ty = Predef.type_mallocd inner_ty in
-      let expected_mode =
-            mode_coerce
-              (Value.of_const {Value.Const.max with uniqueness = Unique})
-              expected_mode
-      in
-      let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
       let exp_type =
         match free_to with
         | Pfree_to_unbox ->
-          (* CR jcutler: test teh code path of expand-head: ensure modules work correctly here *)
           begin match get_expanded_desc env inner_ty with
           | Ttuple args -> newty (Tunboxed_tuple(args))
           | Tconstr(p,args,m) ->
@@ -7277,13 +7282,7 @@ and type_expect_
             inner_ty
       in
       if not (is_principal inner_ty) && !Clflags.principal then begin
-        let msg =
-          Format.asprintf
-            "typing this term eagerly matches on \
-             the type %a, which"
-            Printtyp.type_expr inner_ty
-        in
-        Location.prerr_warning loc (Warnings.Not_principal msg)
+        Location.prerr_warning loc (Warnings.Not_principal "this use of free")
       end;
       unify_exp_types loc env exp_type ty_expected;
       let free_to = match free_to with
