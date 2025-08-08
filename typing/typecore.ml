@@ -5941,13 +5941,15 @@ and type_expect_
           let tfu = Tftu_record_boxed {sorts} in
           newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
         | Type_record(lds,Record_boxed sorts,_), Pfree_to_stack ->
-          inner_ty, Tfree_to_stack(Tfts_record_boxed {sorts; is_mutable = is_mutable lds})
+          inner_ty,
+          Tfree_to_stack(Tfts_record_boxed {sorts; is_mutable = is_mutable lds})
         | Type_record(_,Record_mixed shape,_), Pfree_to_unbox ->
           let p_unboxed = get_unboxed_version p decl in
           let tfu = Tftu_record_mixed {shape} in
           newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
         | Type_record(lds,Record_mixed shape,_), Pfree_to_stack ->
-          inner_ty, Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
+          inner_ty,
+          Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
         | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
           let constructors =
             List.map2
@@ -5990,7 +5992,8 @@ and type_expect_
           in
           inner_ty, Tfree_to_stack(Tfts_variant_boxed constructors)
         end
-      | Tvariant _, Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
+      | Tvariant _, Pfree_to_unbox ->
+        unsupported (No_unboxed_version inner_ty)
       | Tvariant row, Pfree_to_stack ->
         let constructors =
           List.map (fun (label, row_field) ->
