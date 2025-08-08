@@ -5868,10 +5868,6 @@ and type_expect_
     let unsupported reason =
       raise (Error (e.pexp_loc, env, Unsupported_free reason))
     in
-    let get_decl p =
-        try Env.find_type p env
-        with Not_found -> unsupported (Decl_not_found p)
-      in
     let has_unboxed_version decl =
       Option.is_some decl.type_unboxed_version
     in
@@ -5911,7 +5907,10 @@ and type_expect_
       | Ttuple args, Pfree_to_stack ->
         inner_ty, Tfree_to_stack(Tfts_tuple({num_fields = List.length args}))
       | Tconstr(p,args,m), _ ->
-        let decl = get_decl p in
+        let decl =
+          try Env.find_type p env
+          with Not_found -> unsupported (Decl_not_found p)
+        in
         begin match decl.type_kind, free_to with
         | (Type_record(_,(Record_float| Record_ufloat),_) | Type_variant _),
           Pfree_to_unbox ->
@@ -5928,14 +5927,16 @@ and type_expect_
         | Type_abstract _,_
         | Type_open,_ ->
           unsupported (Unfreeable inner_ty)
-        | Type_record(lds,Record_float,_), Pfree_to_stack ->
+        | Type_record(lds,((Record_float | Record_ufloat) as rep),_), Pfree_to_stack ->
           let num_fields = List.length lds in
           let is_mutable = is_mutable lds in
-          inner_ty, Tfree_to_stack(Tfts_record_float{num_fields; is_mutable})
-        | Type_record(lds,Record_ufloat,_), Pfree_to_stack ->
-          let num_fields = List.length lds in
-          let is_mutable = is_mutable lds in
-          inner_ty, Tfree_to_stack(Tfts_record_ufloat{num_fields; is_mutable})
+          let is_ufloat =
+            match rep with
+            | Record_float -> false
+            | Record_ufloat -> true
+            | _ -> assert false
+          in
+          inner_ty, Tfree_to_stack(Tfts_record_float{num_fields; is_mutable; is_ufloat})
         | Type_record(_,Record_boxed sorts,_), Pfree_to_unbox ->
           let p_unboxed = get_unboxed_version p decl in
           let tfu = Tftu_record_boxed {sorts} in
@@ -5990,7 +5991,7 @@ and type_expect_
                   Tfts_constructor_mixed {tag;shape;is_mutable})
               cstrs (Array.to_list sorts)
           in
-          inner_ty, Tfree_to_stack(Tfts_variant_boxed constructors)
+          inner_ty, Tfree_to_stack(Tfts_variant constructors)
         end
       | Tvariant _, Pfree_to_unbox ->
         unsupported (No_unboxed_version inner_ty)

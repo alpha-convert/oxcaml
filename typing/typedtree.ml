@@ -338,11 +338,9 @@ and free_to_stack =
       ; is_mutable : bool }
   | Tfts_record_float of
       { num_fields : int
-      ; is_mutable : bool }
-  | Tfts_record_ufloat of
-      { num_fields : int
-      ; is_mutable : bool }
-  | Tfts_variant_boxed of free_to_stack_constructor_shape list
+      ; is_mutable : bool
+      ; is_ufloat : bool }
+  | Tfts_variant of free_to_stack_constructor_shape list
   | Tfts_polymorphic_variant of free_to_stack_poly_variant_shape list
 
 and free_to_stack_constructor_shape =
