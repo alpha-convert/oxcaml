@@ -1405,6 +1405,11 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       in
       make_free ~result_layout:(Lambda.Pvalue Lambda.generic_value) ~result_lam
     | Tfree_to_stack(Tfts_variant ctrs) ->
+      (* CR jcutler for ccasinghino: I played around with the idea of trying to
+         use the actual match compiler to do this instead of emulating it.
+         Seemed like slightly more trouble than it was worth, given the work of
+         building patterns and then calling one of the entry points of
+         matching.ml I'm not overly thrilled by this code duplication, though. *)
       let (sw_blocks, sw_consts) =
         List.partition_map
           (function
@@ -1455,18 +1460,20 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
             Either.Right tag)
         ctrs
       in
-      let build_const_chain cases =
+      let make_const_ite cases =
         let rec loop = function
           | [] ->
             Misc.fatal_error "Impossible, expected at least one constructor"
           | [(_, res)] -> res
           | (tag, res) :: rest ->
-            let cond = Lprim (Pintcomp Ceq, [l_cast; Lconst (const_int tag)], of_location ~scopes e.exp_loc) in
+            let cond =
+              Lprim (Pintcomp Ceq, [l_cast; Lconst (const_int tag)], of_location ~scopes e.exp_loc)
+            in
             Lifthenelse (cond, res, loop rest, Lambda.Pvalue Lambda.generic_value)
         in
         loop cases
       in
-      let build_nonconst_chain tags =
+      let make_nonconst_ite tags =
         let field_value = Lprim (Pfield (1, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
         let block_shape = Some [Lambda.generic_value; Lambda.generic_value] in
         let tag_extract = Lprim (Pfield (0, Pointer, Reads_agree), [l_cast], of_location ~scopes e.exp_loc) in
@@ -1484,11 +1491,11 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
       in
       match const_constructors, nonconst_constructors with
       | [], [] -> Misc.fatal_error "Impossible, expected at least one constructor"
-      | const_cases, [] -> build_const_chain const_cases
-      | [], nonconst_tags -> build_nonconst_chain nonconst_tags
+      | const_cases, [] -> make_const_ite const_cases
+      | [], nonconst_tags -> make_nonconst_ite nonconst_tags
       | const_cases, nonconst_tags ->
-        let const_lam = build_const_chain const_cases in
-        let nonconst_lam = build_nonconst_chain nonconst_tags in
+        let const_lam = make_const_ite const_cases in
+        let nonconst_lam = make_nonconst_ite nonconst_tags in
         Lifthenelse (Lprim (Pisint { variant_only = true }, [l_cast], of_location ~scopes e.exp_loc),
                     const_lam, nonconst_lam, Lambda.Pvalue Lambda.generic_value)
     end
