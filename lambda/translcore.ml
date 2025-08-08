@@ -1357,23 +1357,6 @@ and transl_exp0 ~in_new_scope ~scopes sort e =
           layouts, fields
         in
         make_free_to_unboxed layouts fields
-    (* | Tfree_to_unbox(Tftu_tuple({num_fields})) ->
-        let layouts =
-          List.init num_fields (fun _ -> Lambda.layout_value_field)
-        in
-        let fields = block_fields num_fields in
-        make_free_to_unboxed layouts fields
-    | Tfree_to_unbox(Tftu_record_boxed({sorts})) ->
-          let layouts =
-            Array.map Lambda.layout_of_const_sort sorts
-            |> Array.to_list
-          in
-          let fields = block_fields (Array.length sorts) in
-          make_free_to_unboxed layouts fields
-    | Tfree_to_unbox(Tftu_record_mixed({shape})) ->
-
-      make_free_to_unboxed layouts fields *)
-
     | Tfree_to_stack(Tfts_tuple({num_fields})) ->
       let block_shape =
         Some (List.init num_fields (fun _ -> Lambda.generic_value))
