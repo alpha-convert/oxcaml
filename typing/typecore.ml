@@ -5897,23 +5897,20 @@ and type_expect_
       if not (has_unboxed_version decl) then unsupported (No_unboxed_version inner_ty)
       else Path.unboxed_version p
     in
+    let is_mutable lds =
+      List.exists
+        (fun (ld : Types.label_declaration) ->
+            Types.is_mutable ld.ld_mutable)
+        lds
+    in
     let exp_type,tfree_to =
-      let is_mutable lds =
-        List.exists
-          (fun (ld : Types.label_declaration) ->
-              Types.is_mutable ld.ld_mutable)
-          lds
-      in
-      match get_desc (Ctype.expand_head env inner_ty) with
-      | Ttuple args ->
-        begin match free_to with
-        | Pfree_to_unbox ->
-            newty (Tunboxed_tuple(args)),
-            Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
-        | Pfree_to_stack ->
-            inner_ty, Tfree_to_stack(Tfts_tuple({num_fields = List.length args}))
-        end
-      | Tconstr(p,args,m) ->
+      match get_desc (Ctype.expand_head env inner_ty), free_to with
+      | Ttuple args, Pfree_to_unbox ->
+        newty (Tunboxed_tuple(args)),
+        Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
+      | Ttuple args, Pfree_to_stack ->
+        inner_ty, Tfree_to_stack(Tfts_tuple({num_fields = List.length args}))
+      | Tconstr(p,args,m), _ ->
         let decl = get_decl p in
         begin match decl.type_kind, free_to with
         | (Type_record(_,(Record_float| Record_ufloat),_) | Type_variant _),
@@ -5970,51 +5967,46 @@ and type_expect_
                       "Variant representation is incompatible with these\
                       constructor types."
                 in
-                let shape, is_mutable =
-                  match cstr_repr with
-                  | _  when cstr_desc.cstr_constant ->
-                    Tfts_constructor_const {tag}, false
-                  | Constructor_uniform_value ->
-                    let sorts, is_mutable =
-                      (match cstr_decl.cd_args with
-                      | Cstr_tuple args ->
-                        List.map (fun ca -> ca.ca_sort) args , false
-                      | Cstr_record lds ->
-                        List.map (fun ld -> ld.ld_sort) lds , is_mutable lds)
-                    in
-                    Tfts_constructor_vals {sorts}, is_mutable
-                  | Constructor_mixed shape ->
-                    let is_mut = match cstr_decl.cd_args with
-                      | Cstr_tuple _ -> false
-                      | Cstr_record lds -> is_mutable lds
-                    in
-                    Tfts_constructor_mixed shape, is_mut
-                in
-                tag, shape, is_mutable)
+                match cstr_repr with
+                | _  when cstr_desc.cstr_constant ->
+                  Tfts_constructor_const {tag}
+                | Constructor_uniform_value ->
+                  let sorts, is_mutable =
+                    (match cstr_decl.cd_args with
+                    | Cstr_tuple args ->
+                      List.map (fun ca -> ca.ca_sort) args , false
+                    | Cstr_record lds ->
+                      List.map (fun ld -> ld.ld_sort) lds , is_mutable lds)
+                  in
+                  Tfts_constructor_vals {tag;sorts;is_mutable}
+                | Constructor_mixed shape ->
+                  let is_mutable =
+                    match cstr_decl.cd_args with
+                    | Cstr_tuple _ -> false
+                    | Cstr_record lds -> is_mutable lds
+                  in
+                  Tfts_constructor_mixed {tag;shape;is_mutable})
               cstrs (Array.to_list sorts)
           in
-          inner_ty, Tfree_to_stack(Tfts_variant_boxed{constructors})
+          inner_ty, Tfree_to_stack(Tfts_variant_boxed constructors)
         end
-      | Tvariant row ->
-        begin match free_to with
-        | Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
-        | Pfree_to_stack ->
-          let constructors =
-            List.map (fun (label, row_field) ->
-              let tag = Btype.hash_variant label in
-              match row_field_repr row_field with
-              | Rpresent None ->
-                (Tfts_poly_variant_const {tag})
-              | Rpresent (Some _) ->
-                (Tfts_poly_variant_val {tag})
-              | Rabsent | Reither _ -> unsupported (Unfreeable inner_ty))
-              (row_fields row)
-          in
-          inner_ty, Tfree_to_stack(Tfts_polymorphic_variant{constructors})
-        end
-      | Tnil |Tvar _ | Tarrow (_, _, _, _) | Tunboxed_tuple _ | Tobject (_, _)
+      | Tvariant _, Pfree_to_unbox -> unsupported (No_unboxed_version inner_ty)
+      | Tvariant row, Pfree_to_stack ->
+        let constructors =
+          List.map (fun (label, row_field) ->
+            let tag = Btype.hash_variant label in
+            match row_field_repr row_field with
+            | Rpresent None ->
+              (Tfts_poly_variant_const {tag})
+            | Rpresent (Some _) ->
+              (Tfts_poly_variant_val {tag})
+            | Rabsent | Reither _ -> unsupported (Unfreeable inner_ty))
+            (row_fields row)
+        in
+        inner_ty, Tfree_to_stack(Tfts_polymorphic_variant constructors)
+      | (Tnil |Tvar _ | Tarrow (_, _, _, _) | Tunboxed_tuple _ | Tobject (_, _)
       | Tfield (_, _, _, _) | Tlink _ | Tsubst (_, _) | Tunivar _
-      | Tpoly (_, _) | Tpackage (_, _) | Tof_kind _ ->
+      | Tpoly (_, _) | Tpackage (_, _) | Tof_kind _), _ ->
         unsupported (Unfreeable inner_ty)
     in
     (match tfree_to with

@@ -319,32 +319,33 @@ and expression_desc =
   | Texp_hole of unique_use
   | Texp_free of expression * free_to
 
+
+and free_to =
+  | Tfree_to_unbox of free_to_unbox
+  | Tfree_to_stack of free_to_stack
+
 and free_to_unbox =
-  | Tftu_tuple of {num_fields : int}
+  | Tftu_tuple of { num_fields : int }
   | Tftu_record_boxed of { sorts : Jkind_types.Sort.Const.t array }
   | Tftu_record_mixed of { shape : Types.mixed_product_shape }
 
 and free_to_stack =
   | Tfts_tuple of {num_fields : int}
-  | Tfts_record_boxed of { sorts : Jkind_types.Sort.Const.t array; is_mutable : bool}
-  | Tfts_record_mixed of { shape : Types.mixed_product_shape; is_mutable : bool}
-  | Tfts_record_float of {num_fields : int; is_mutable : bool}
-  | Tfts_record_ufloat of {num_fields : int; is_mutable : bool}
-  | Tfts_variant_boxed of { constructors : (int * free_to_stack_constructor_shape * bool) list}
-  | Tfts_polymorphic_variant of { constructors : free_to_stack_poly_variant_shape list }
+  | Tfts_record_boxed of { sorts : Jkind_types.Sort.Const.t array ; is_mutable : bool}
+  | Tfts_record_mixed of { shape : Types.mixed_product_shape ; is_mutable : bool}
+  | Tfts_record_float of {num_fields : int ; is_mutable : bool}
+  | Tfts_record_ufloat of {num_fields : int ; is_mutable : bool}
+  | Tfts_variant_boxed of free_to_stack_constructor_shape list
+  | Tfts_polymorphic_variant of free_to_stack_poly_variant_shape list
 
 and free_to_stack_constructor_shape =
   | Tfts_constructor_const of { tag : int }
-  | Tfts_constructor_vals of { sorts : Jkind_types.Sort.Const.t list }
-  | Tfts_constructor_mixed of mixed_product_shape
+  | Tfts_constructor_vals of { tag : int; sorts : Jkind_types.Sort.Const.t list ; is_mutable : bool}
+  | Tfts_constructor_mixed of { tag : int; shape : Types.mixed_product_shape; is_mutable : bool}
 
 and free_to_stack_poly_variant_shape =
-  | Tfts_poly_variant_const of {tag : int}
-  | Tfts_poly_variant_val of {tag : int}
-
-and free_to =
-  | Tfree_to_unbox of free_to_unbox
-  | Tfree_to_stack of free_to_stack
+  | Tfts_poly_variant_const of { tag : int }
+  | Tfts_poly_variant_val of { tag : int }
 
 and ident_kind =
   | Id_value
