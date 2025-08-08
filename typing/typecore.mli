@@ -216,6 +216,14 @@ type unsupported_external_allocation =
   | Function
   | Array
 
+type unsupported_free =
+  | Has_unboxed_not_supported of type_expr
+  | No_unboxed_version of type_expr
+  | Already_unboxed of Path.t
+  | Inlined_record of Path.t
+  | Decl_not_found of Path.t
+  | Unfreeable of type_expr
+
 type error =
   | Constructor_arity_mismatch of Longident.t * int * int
   | Constructor_labeled_arg
@@ -350,6 +358,7 @@ type error =
       { some_args_ok : bool; ty_fun : type_expr; jkind : jkind_lr }
   | Overwrite_of_invalid_term
   | Unexpected_hole
+  | Unsupported_free of unsupported_free
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error

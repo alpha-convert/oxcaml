@@ -152,6 +152,14 @@ type unsupported_external_allocation =
   | Function
   | Array
 
+type unsupported_free =
+  | Has_unboxed_not_supported of type_expr
+  | No_unboxed_version of type_expr
+  | Already_unboxed of Path.t
+  | Inlined_record of Path.t
+  | Decl_not_found of Path.t
+  | Unfreeable of type_expr
+
 let print_unsupported_external_allocation ppf = function
   | Lazy -> Format.fprintf ppf "lazy expressions"
   | Module -> Format.fprintf ppf "modules"
@@ -311,6 +319,7 @@ type error =
       { some_args_ok : bool; ty_fun : type_expr; jkind : jkind_lr }
   | Overwrite_of_invalid_term
   | Unexpected_hole
+  | Unsupported_free of unsupported_free
 
 exception Error of Location.t * Env.t * error
 exception Error_forward of Location.error
@@ -4447,6 +4456,7 @@ let rec is_nonexpansive exp =
   (* Texp_hole can always be replaced by a field read from the old allocation,
      which is non-expansive: *)
   | Texp_hole _ -> true
+  | Texp_free (e,_) -> is_nonexpansive e
 
 and is_nonexpansive_prim (prim : Primitive.description) args =
   match prim.prim_name, args with
@@ -4902,7 +4912,7 @@ let check_partial_application ~statement exp =
             | Texp_let (_, _, e) | Texp_letmutable(_, e)
             | Texp_sequence (_, _, e) | Texp_open (_, e)
             | Texp_letexception (_, e) | Texp_letmodule (_, _, _, _, e)
-            | Texp_exclave e ->
+            | Texp_exclave e | Texp_free (e,_) ->
                 check e
             | Texp_apply _ | Texp_send _ | Texp_new _ | Texp_letop _ ->
                 Location.prerr_warning exp_loc
@@ -5853,6 +5863,181 @@ and type_expect_
         exp_type = instance ty_expected;
         exp_attributes = sexp.pexp_attributes;
         exp_env = env }
+  in
+  let type_expect_free e free_to =
+    let unsupported reason =
+      raise (Error (e.pexp_loc, env, Unsupported_free reason))
+    in
+    let has_unboxed_version decl =
+      Option.is_some decl.type_unboxed_version
+    in
+    let expected_mode =
+          mode_coerce
+            (Value.of_const {Value.Const.max with uniqueness = Unique})
+            expected_mode
+    in
+    let inner_ty,exp =
+      with_local_level ~post:(fun (_,exp) -> generalize_structure_exp exp) (fun () ->
+        let inner_ty =
+          newvar (Jkind.Builtin.value_or_null
+                      ~why:(Type_argument
+                            { parent_path = Predef.path_mallocd ;
+                              position = 1; arity = 1}))
+        in
+        let mallocd_ty = Predef.type_mallocd inner_ty in
+        let exp = type_expect env expected_mode e {ty = mallocd_ty; explanation} in
+        inner_ty,exp
+      )
+    in
+    let get_unboxed_version p decl =
+      if not (has_unboxed_version decl) then unsupported (No_unboxed_version inner_ty)
+      else Path.unboxed_version p
+    in
+    let is_mutable lds =
+      List.exists
+        (fun (ld : Types.label_declaration) ->
+            Types.is_mutable ld.ld_mutable)
+        lds
+    in
+    let exp_type,tfree_to =
+      match get_desc (Ctype.expand_head env inner_ty), free_to with
+      | Ttuple args, Pfree_to_unbox ->
+        newty (Tunboxed_tuple(args)),
+        Tfree_to_unbox(Tftu_tuple{num_fields = List.length args})
+      | Ttuple args, Pfree_to_stack ->
+        inner_ty, Tfree_to_stack(Tfts_tuple({num_fields = List.length args}))
+      | Tconstr(p,args,m), _ ->
+        let decl =
+          try Env.find_type p env
+          with Not_found -> unsupported (Decl_not_found p)
+        in
+        begin match decl.type_kind, free_to with
+        | (Type_record(_,(Record_float| Record_ufloat),_) | Type_variant _),
+          Pfree_to_unbox ->
+          unsupported (No_unboxed_version inner_ty)
+        | (Type_record(_,Record_unboxed,_)
+        | Type_variant (_,(Variant_unboxed | Variant_with_null),_)), _ ->
+          unsupported (Already_unboxed p)
+        | Type_abstract _, Pfree_to_unbox when has_unboxed_version decl ->
+          unsupported (Has_unboxed_not_supported inner_ty)
+        | Type_record(_,Record_inlined _,_), _ ->
+          unsupported (Inlined_record p)
+        | Type_variant (_,Variant_extensible,_), Pfree_to_stack
+        | Type_record_unboxed_product _,_
+        | Type_abstract _,_
+        | Type_open,_ ->
+          unsupported (Unfreeable inner_ty)
+        | Type_record(lds,((Record_float | Record_ufloat) as rep),_), Pfree_to_stack ->
+          let num_fields = List.length lds in
+          let is_mutable = is_mutable lds in
+          let is_ufloat =
+            match rep with
+            | Record_float -> false
+            | Record_ufloat -> true
+            | _ -> assert false
+          in
+          inner_ty, Tfree_to_stack(Tfts_record_float{num_fields; is_mutable; is_ufloat})
+        | Type_record(_,Record_boxed sorts,_), Pfree_to_unbox ->
+          let p_unboxed = get_unboxed_version p decl in
+          let tfu = Tftu_record_boxed {sorts} in
+          newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
+        | Type_record(lds,Record_boxed sorts,_), Pfree_to_stack ->
+          inner_ty,
+          Tfree_to_stack(Tfts_record_boxed {sorts; is_mutable = is_mutable lds})
+        | Type_record(_,Record_mixed shape,_), Pfree_to_unbox ->
+          let p_unboxed = get_unboxed_version p decl in
+          let tfu = Tftu_record_mixed {shape} in
+          newty (Tconstr(p_unboxed,args,m)), Tfree_to_unbox(tfu)
+        | Type_record(lds,Record_mixed shape,_), Pfree_to_stack ->
+          inner_ty,
+          Tfree_to_stack(Tfts_record_mixed {shape; is_mutable = is_mutable lds})
+        | Type_variant (cstrs,Variant_boxed sorts,_), Pfree_to_stack ->
+          let constructors =
+            List.map2
+              (fun (cstr_decl : Types.constructor_declaration) (cstr_repr, _) ->
+                (* CR jcutler for ccasinghino: is this right? I couldn't find a
+                   simpler way to get the cstr_description from the cstr_desc *)
+                let cstr_desc =
+                  Env.find_constructor_by_name
+                    (Longident.Lident (Ident.name cstr_decl.cd_id))
+                    env
+                in
+                let tag =
+                  match cstr_desc.cstr_tag with
+                  | Ordinary {runtime_tag} -> runtime_tag
+                  | Null | Extension _ ->
+                    Misc.fatal_error
+                      "Variant representation is incompatible with these\
+                      constructor types."
+                in
+                match cstr_repr with
+                | _  when cstr_desc.cstr_constant ->
+                  Tfts_constructor_const {tag}
+                | Constructor_uniform_value ->
+                  let sorts, is_mutable =
+                    (match cstr_decl.cd_args with
+                    | Cstr_tuple args ->
+                      List.map (fun ca -> ca.ca_sort) args , false
+                    | Cstr_record lds ->
+                      List.map (fun ld -> ld.ld_sort) lds , is_mutable lds)
+                  in
+                  Tfts_constructor_vals {tag;sorts;is_mutable}
+                | Constructor_mixed shape ->
+                  let is_mutable =
+                    match cstr_decl.cd_args with
+                    | Cstr_tuple _ -> false
+                    | Cstr_record lds -> is_mutable lds
+                  in
+                  Tfts_constructor_mixed {tag;shape;is_mutable})
+              cstrs (Array.to_list sorts)
+          in
+          inner_ty, Tfree_to_stack(Tfts_variant constructors)
+        end
+      | Tvariant _, Pfree_to_unbox ->
+        unsupported (No_unboxed_version inner_ty)
+      | Tvariant row, Pfree_to_stack ->
+        let constructors =
+          List.map (fun (label, row_field) ->
+            let tag = Btype.hash_variant label in
+            match row_field_repr row_field with
+            | Rpresent None ->
+              (Tfts_poly_variant_const {tag})
+            | Rpresent (Some _) ->
+              (Tfts_poly_variant_val {tag})
+            | Rabsent | Reither _ -> unsupported (Unfreeable inner_ty))
+            (row_fields row)
+        in
+        inner_ty, Tfree_to_stack(Tfts_polymorphic_variant constructors)
+      | (Tnil |Tvar _ | Tarrow (_, _, _, _) | Tunboxed_tuple _ | Tobject (_, _)
+      | Tfield (_, _, _, _) | Tlink _ | Tsubst (_, _) | Tunivar _
+      | Tpoly (_, _) | Tpackage (_, _) | Tof_kind _), _ ->
+        unsupported (Unfreeable inner_ty)
+    in
+    (match tfree_to with
+    | Tfree_to_stack _ ->
+        submode ~loc ~env
+          (Value.min_with_comonadic Areality Regionality.local)
+          expected_mode
+    | Tfree_to_unbox _ -> ());
+    if not (is_principal inner_ty) && !Clflags.principal then begin
+      let msg =
+        Format.asprintf
+          "typing this term eagerly matches on \
+           the type %a, which"
+          Printtyp.type_expr inner_ty
+      in
+      Location.prerr_warning loc (Warnings.Not_principal msg)
+    end;
+    unify_exp_types loc env exp_type ty_expected;
+    let exp_desc = Texp_free(exp,tfree_to) in
+    re {
+      exp_desc;
+      exp_type;
+      exp_loc = loc;
+      exp_extra = [];
+      exp_attributes = sexp.pexp_attributes;
+      exp_env = env
+    }
   in
   match desc with
   | Pexp_ident lid ->
@@ -7158,7 +7343,7 @@ and type_expect_
       | Pexp_override _ | Pexp_letmodule (_, _, _) | Pexp_letexception (_, _)
       | Pexp_assert _ | Pexp_poly (_, _) | Pexp_newtype (_, _, _)
       | Pexp_open (_, _)| Pexp_letop _  |Pexp_extension _ | Pexp_stack _
-      | Pexp_malloc _ | Pexp_overwrite (_, _)) -> not_alloc ());
+      | Pexp_malloc _ | Pexp_overwrite (_, _) | Pexp_free(_,_)) -> not_alloc ());
       let inner_ty =
         newvar (Jkind.Builtin.value_or_null ~why:(Type_argument
           { parent_path = Predef.path_mallocd ; position = 1; arity = 1}))
@@ -7201,7 +7386,7 @@ and type_expect_
       | Texp_object (_, _) | Texp_pack _ | Texp_letop _
       | Texp_extension_constructor (_, _) | Texp_open (_, _)
       | Texp_probe _ | Texp_probe_is_enabled _ | Texp_exclave _
-      | Texp_overwrite (_, _) | Texp_hole _ ->
+      | Texp_overwrite (_, _) | Texp_hole _ | Texp_free (_,_) ->
           Misc.fatal_error
               "Parsetree for externally-allocable \
                term elaborated to Typedtree corresponding to something else"
@@ -7214,7 +7399,7 @@ and type_expect_
         exp_attributes = sexp.pexp_attributes;
         exp_env = env;
       }
-
+  | Pexp_free (e,free_to) -> type_expect_free e free_to
   | Pexp_comprehension comp ->
       Language_extension.assert_enabled ~loc Comprehensions ();
       type_comprehension_expr
@@ -11579,6 +11764,35 @@ let report_error ~loc env =
   | Unexpected_hole ->
       Location.errorf ~loc
         "wildcard \"_\" not expected."
+  | Unsupported_free reason ->
+        match reason with
+        | Has_unboxed_not_supported typ ->
+            Location.errorf ~loc
+              "Type %a has an unboxed version, but freeing it to unboxed is not yet supported"
+              (Style.as_inline_code Printtyp.type_expr) typ
+        | No_unboxed_version typ ->
+            Location.errorf ~loc
+              "Type %a does not have an unboxed version, try free_stack_"
+              (Style.as_inline_code Printtyp.type_expr) typ
+        | Already_unboxed p ->
+            Location.errorf ~loc
+              "Type %a is an unboxed record, nothing to free."
+              Path.print p
+        | Inlined_record p ->
+            Location.errorf ~loc
+              "Type %a is an inlined record (Hint: free_ the enclosing constructor)"
+              Path.print p
+        | Decl_not_found p ->
+            Location.errorf ~loc
+              "Type %a does not have a definition in scope, cannot free it."
+              Path.print p
+        | Unfreeable typ ->
+            Location.errorf ~loc
+              "Cannot free values of type %a"
+              (Style.as_inline_code Printtyp.type_expr) typ
+
+
+
 
 let report_error ~loc env err =
   Printtyp.wrap_printing_env_error env
