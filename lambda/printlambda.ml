@@ -970,6 +970,7 @@ let primitive ppf = function
       fprintf ppf "(poke@ %a)"
         peek_or_poke layout
   | Preinterpret_word_as_value -> fprintf ppf "reinterpret_word_as_value"
+  | Pfree_external_block -> fprintf ppf "free_external_block"
 
 let name_of_primitive = function
   | Pbytes_of_string -> "Pbytes_of_string"
@@ -1171,6 +1172,7 @@ let name_of_primitive = function
   | Ppeek _ -> "Ppeek"
   | Ppoke _ -> "Ppoke"
   | Preinterpret_word_as_value -> "Preinterpret_word_as_value"
+  | Pfree_external_block -> "Pfree_external_block"
 
 let zero_alloc_attribute ppf check =
   match check with

@@ -750,6 +750,10 @@ let rec comp_expr (exp : Lambda.lambda) : Blambda.blambda =
       pseudo_event (variadic (Makeblock { tag = Config.lazy_tag }))
     | Pmakelazyblock Forward_tag ->
       pseudo_event (variadic (Makeblock { tag = Obj.forward_tag }))
+    | Pfree_external_block -> (
+      match args with
+      | [arg] -> Sequence (comp_arg arg, Const (Const_base (Const_int 0)))
+      | _ -> wrong_arity ~expected:1)
     | Preinterpret_word_as_value -> (
       match args with [arg] -> comp_arg arg | _ -> wrong_arity ~expected:1))
 

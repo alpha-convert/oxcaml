@@ -780,6 +780,11 @@ CAMLexport intnat caml_alloc_malloc_with_reserved(mlsize_t wosize, tag_t tag,
   return v;
 }
 
+CAMLexport value caml_free_external(intnat x){
+  free((void *) Hp_val((value) x));
+  return Val_unit;
+}
+
 /* Global memory pool.
 
    The pool is structured as a ring of blocks, where each block's header

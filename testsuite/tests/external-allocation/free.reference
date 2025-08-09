@@ -1,0 +1,16 @@
+2 3
+tuple: free was called
+2 3 4
+tuple3: free was called
+2
+singleton record: free was called
+2 3
+two-element record: free was called
+2 3
+two-element record with mutable fields: free was called
+2 3
+mixed record: free was called
+2 3
+mixed record 2: free was called
+2 3
+oops all unboxed: free was called

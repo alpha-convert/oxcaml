@@ -410,6 +410,7 @@ type primitive =
   | Pcpu_relax
   (* Unsafely reinterpret a pointer of kind word to a value *)
   | Preinterpret_word_as_value
+  | Pfree_external_block
 
 (** This is the same as [Primitive.native_repr] but with [Repr_poly]
     compiled away. *)
@@ -617,6 +618,8 @@ val equal_ignorable_product_element_kind :
 val must_be_value : layout -> value_kind
 
 val generic_value : value_kind
+
+val layout_of_const_sort : Jkind.Sort.Const.t -> layout
 
 (* This is the layout of ocaml values used as arguments to or returned from
    primitives for this [extern_repr].  So the legacy [Unboxed_float] - which is
@@ -1148,6 +1151,11 @@ val transl_mixed_product_shape_for_read :
   get_value_kind:(int -> value_kind) -> get_mode:(int -> allocation_mode)
   -> Types.mixed_product_shape
   -> mixed_block_shape_with_allocation_mode
+
+val layout_of_mixed_block_shape :
+  'a mixed_block_element array -> path:int list -> layout
+
+val map_mixed_block_element : ('a -> 'b) -> 'a mixed_block_element -> 'b mixed_block_element
 
 val make_sequence: ('a -> lambda) -> 'a list -> lambda
 

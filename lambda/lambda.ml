@@ -411,6 +411,7 @@ type primitive =
   | Ppoll
   | Pcpu_relax
   | Preinterpret_word_as_value
+  | Pfree_external_block
 
 and extern_repr =
   | Same_as_ocaml_repr of Jkind.Sort.Const.t
@@ -1527,6 +1528,20 @@ let rec transl_mixed_product_shape_for_read ~get_value_kind ~get_mode shape =
         (transl_mixed_product_shape_for_read ~get_value_kind ~get_mode shapes)
   ) shape
 
+let rec map_mixed_block_element f = function
+| Value v -> Value v
+| Float_boxed x -> Float_boxed (f x)
+| Float64 -> Float64
+| Float32 -> Float32
+| Bits32 -> Bits32
+| Bits64 -> Bits64
+| Vec128 -> Vec128
+| Vec256 -> Vec256
+| Vec512 -> Vec512
+| Word -> Word
+| Product shapes ->
+  Product (Array.map (map_mixed_block_element f) shapes)
+
 (* Compile a sequence of expressions *)
 
 let rec make_sequence fn = function
@@ -2159,7 +2174,7 @@ let primitive_may_allocate : primitive -> allocation_mode option = function
          at a level where these primitives are necessary is very likely going
          to be native. *)
       Some alloc_heap
-  | Preinterpret_word_as_value -> None
+  | Preinterpret_word_as_value | Pfree_external_block -> None
 
 let primitive_can_raise prim =
   match prim with
@@ -2322,7 +2337,8 @@ let primitive_can_raise prim =
   | Preinterpret_tagged_int63_as_unboxed_int64
   | Preinterpret_unboxed_int64_as_tagged_int63
   | Parray_element_size_in_bytes _ | Ppeek _ | Ppoke _
-  | Preinterpret_word_as_value ->
+  | Preinterpret_word_as_value
+  | Pfree_external_block ->
     false
 
 let constant_layout: constant -> layout = function
@@ -2606,6 +2622,7 @@ let primitive_result_layout (p : primitive) =
     )
   | Ppoke _ -> layout_unit
   | Preinterpret_word_as_value -> layout_any_value
+  | Pfree_external_block -> layout_unit
 
 let compute_expr_layout free_vars_kind lam =
   let rec compute_expr_layout kinds = function
